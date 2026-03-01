@@ -49,5 +49,5 @@ yak_link_options(
 	-Wl,--gc-sections
 )
 
-install(TARGETS yak DESTINATION yak/yak)
+install(TARGETS yak DESTINATION share/yak)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/yak.sym DESTINATION share/yak)
