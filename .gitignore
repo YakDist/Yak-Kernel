@@ -2,4 +2,3 @@
 *.xbstrap
 /build
 qemulog.txt
-compile_commands.json

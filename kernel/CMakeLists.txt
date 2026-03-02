@@ -14,6 +14,10 @@ endif()
 add_subdirectory(arch/${YAK_ARCH})
 add_subdirectory(core)
 
+yak_add_includes(
+	include
+)
+
 yak_defines(
 	__KERNEL__
 	${YAK_ARCH}
