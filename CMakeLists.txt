@@ -36,4 +36,8 @@ function(yak_defines)
 	target_compile_definitions(yak PRIVATE ${ARGN})
 endfunction()
 
+function(yak_link)
+	target_link_libraries(yak PRIVATE ${ARGN})
+endfunction()
+
 add_subdirectory(kernel)

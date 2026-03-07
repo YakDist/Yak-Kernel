@@ -2,6 +2,8 @@ add_executable(yak)
 
 include(symbols.cmake)
 
+find_package(PkgConfig REQUIRED)
+
 string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _processor)
 if (_processor STREQUAL "x86_64")
 	set(YAK_ARCH "x86_64" CACHE STRING "Project architecture" FORCE)
@@ -11,11 +13,17 @@ else()
 	)
 endif()
 
+pkg_check_modules(FREESTND_C_HDRS REQUIRED IMPORTED_TARGET freestnd-c-hdrs-x86_64)
+pkg_check_modules(FREESTND_CXX_HDRS REQUIRED IMPORTED_TARGET freestnd-cxx-hdrs-x86_64)
+pkg_check_modules(FRIGG REQUIRED IMPORTED_TARGET frigg)
+
 add_subdirectory(arch/${YAK_ARCH})
 add_subdirectory(core)
+add_subdirectory(lib)
 
 yak_add_includes(
 	include
+	arch
 )
 
 yak_defines(
@@ -31,6 +39,7 @@ yak_compile_options(
 
 yak_compile_options(
 	-ffreestanding
+	-nostdinc
 	-fno-omit-frame-pointer
 	-fno-strict-aliasing
 	-mgeneral-regs-only
@@ -50,7 +59,15 @@ yak_compile_options(
 
 yak_link_options(
 	-nostdlib
-	-Wl,--gc-sections
+	-static
+	-no-pie
+	-Wl,-gc-sections
+)
+
+yak_link(
+	PkgConfig::FRIGG
+	PkgConfig::FREESTND_C_HDRS
+	PkgConfig::FREESTND_CXX_HDRS
 )
 
 install(TARGETS yak DESTINATION share/yak)

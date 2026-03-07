@@ -1,0 +1,15 @@
+#ifndef _CSTRING
+#define _CSTRING
+
+#include <string.h>
+
+namespace std {
+
+using ::memcpy;
+using ::memmove;
+using ::memset;
+using ::memcmp;
+
+}
+
+#endif

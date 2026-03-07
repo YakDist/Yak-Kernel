@@ -1,4 +1,5 @@
-#include <stddef.h>
+#include <cstddef>
+#include <yak/log.h>
 
 /* Declared in the linker script */
 extern "C" void (*__init_array_start[])(void);
@@ -13,6 +14,7 @@ void run_init_array() {
 }
 
 extern "C" void kernel_entry() {
+  printk_early("Hello World\n");
   run_init_array();
   asm volatile("cli; hlt");
 }
