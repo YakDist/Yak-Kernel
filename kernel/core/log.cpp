@@ -16,19 +16,19 @@
 
 namespace yak {
 
+static bool printk_available = false;
+
 static volatile bool early_print_lock = false;
 
 constinit char early_buf[4096] = {0};
 constinit size_t early_buf_pos = 0;
 
-void printk_early(const char *fmt, ...) {
+[[gnu::format(printf, 1, 0)]]
+static void printk_early(const char *fmt, va_list args) {
   if (early_print_lock)
     return;
 
   early_print_lock = true;
-
-  va_list args;
-  va_start(args, fmt);
 
   size_t remaining = sizeof(early_buf) - early_buf_pos;
   if (remaining <= 1) {
@@ -37,8 +37,6 @@ void printk_early(const char *fmt, ...) {
   }
 
   int written = npf_vsnprintf(early_buf + early_buf_pos, remaining, fmt, args);
-
-  va_end(args);
 
   if (written > 0) {
     size_t actual_len =
@@ -58,9 +56,20 @@ void printk_early(const char *fmt, ...) {
   early_print_lock = false;
 }
 
+[[gnu::format(printf, 2, 0)]]
 void vprintk(LogLevel level, const char *fmt, va_list args) {}
 
 [[gnu::format(printf, 2, 3)]]
-void printk(LogLevel level, const char *fmt, ...) {}
+void printk(LogLevel level, const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+
+  if (!printk_available) {
+    printk_early(fmt, args);
+    return;
+  }
+
+  va_end(args);
+}
 
 } // namespace yak
