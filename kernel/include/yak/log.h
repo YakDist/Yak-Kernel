@@ -51,12 +51,12 @@ void printk(LogLevel level, const char *fmt, ...);
 #endif
 
 // clang-format off
-#define pr_debug(fmt, ...) printk(yak::LogLevel::Debug, pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
-#define pr_trace(fmt, ...) printk(yak::LogLevel::Trace, pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
-#define pr_info(fmt, ...)  printk(yak::LogLevel::Info,  pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
-#define pr_warn(fmt, ...)  printk(yak::LogLevel::Warn,  pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
-#define pr_error(fmt, ...) printk(yak::LogLevel::Error, pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
-#define pr_fail(fmt, ...)  printk(yak::LogLevel::Fail,  pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
+#define pr_debug(fmt, ...) yak::printk(yak::LogLevel::Debug, pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
+#define pr_trace(fmt, ...) yak::printk(yak::LogLevel::Trace, pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
+#define pr_info(fmt, ...)  yak::printk(yak::LogLevel::Info,  pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
+#define pr_warn(fmt, ...)  yak::printk(yak::LogLevel::Warn,  pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
+#define pr_error(fmt, ...) yak::printk(yak::LogLevel::Error, pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
+#define pr_fail(fmt, ...)  yak::printk(yak::LogLevel::Fail,  pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
 // clang-format on
 
 } // namespace yak

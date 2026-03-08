@@ -1,3 +1,5 @@
+orsource "arch/$ARCH/Kconfig"
+
 menu "Compiler options"
 	config LTO
 		bool "Enable LTO"

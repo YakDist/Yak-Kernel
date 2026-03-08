@@ -43,7 +43,7 @@ set(COMMON_KCONFIG_ENV_SETTINGS
     KCONFIG_BASE=${PROJECT_ROOT}
     # Set environment variables so that Kconfig can prune Kconfig source
     # files for other architectures
-    ARCH=${ARCH}
+    ARCH=${YAK_ARCH}
     ARCH_DIR=${ARCH_DIR}
     SOC_DIR=${SOC_DIR}
     BUILD_CONFIG_DIR=${BUILD_CONFIG_DIR}
