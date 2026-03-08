@@ -1,6 +1,7 @@
 add_executable(yak)
 
 include(symbols.cmake)
+include(build.cmake)
 
 find_package(PkgConfig REQUIRED)
 
@@ -24,6 +25,7 @@ add_subdirectory(lib)
 yak_add_includes(
 	include
 	arch
+	${AUTOCONF_DIR}
 )
 
 yak_defines(
