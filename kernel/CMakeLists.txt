@@ -18,6 +18,22 @@ pkg_check_modules(FREESTND_C_HDRS REQUIRED IMPORTED_TARGET freestnd-c-hdrs-x86_6
 pkg_check_modules(FREESTND_CXX_HDRS REQUIRED IMPORTED_TARGET freestnd-cxx-hdrs-x86_64)
 pkg_check_modules(FRIGG REQUIRED IMPORTED_TARGET frigg)
 
+find_package(Git QUIET)
+
+add_custom_target(update_version_header ALL
+	COMMAND ${CMAKE_COMMAND} 
+	-DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR} 
+	-DBINARY_DIR=${CMAKE_BINARY_DIR} 
+	-DVERSION_STR=${PROJECT_VERSION}
+	-DVERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+	-DVERSION_MINOR=${PROJECT_VERSION_MINOR}
+	-DVERSION_PATCH=${PROJECT_VERSION_PATCH}
+	-P "${CMAKE_CURRENT_SOURCE_DIR}/get_git_hash.cmake"
+	BYPRODUCTS "${CMAKE_BINARY_DIR}/generated/include/yak/version.h"
+)
+
+add_dependencies(yak update_version_header)
+
 add_subdirectory(arch/${YAK_ARCH})
 add_subdirectory(core)
 add_subdirectory(lib)
@@ -25,7 +41,13 @@ add_subdirectory(lib)
 yak_add_includes(
 	include
 	arch
+)
+
+target_include_directories(yak PRIVATE
+	# Kconfig
 	${AUTOCONF_DIR}
+	# Version
+	${CMAKE_BINARY_DIR}/generated/include
 )
 
 yak_defines(

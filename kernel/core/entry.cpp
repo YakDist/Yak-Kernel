@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <yak/log.h>
+#include <yak/version.h>
 
 namespace yak {
 
@@ -16,7 +17,7 @@ void run_init_array() {
 }
 
 extern "C" void kernel_entry() {
-  printk_early("Booting Yak v%d.%d.%d\n", 1, 0, 0);
+  printk_early("Booting Yak v" KERNEL_VERSION_STR " (commit: " KERNEL_GIT_HASH ")\n");
   run_init_array();
   asm volatile("cli; hlt");
 }
