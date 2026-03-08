@@ -26,3 +26,19 @@ function(yak_link)
 	target_link_libraries(yak PRIVATE ${ARGN})
 endfunction()
 
+function(target_enable_lto target)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT supported)
+
+    if(NOT supported)
+        return()
+    endif()
+
+    set_property(TARGET ${target} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+
+	#if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		#message("Enable ThinLTO for target ${target}")
+		#target_compile_options(${target} PRIVATE -flto=thin)
+		#target_link_options(${target} PRIVATE -flto=thin)
+	#endif()
+endfunction()
