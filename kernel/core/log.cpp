@@ -14,53 +14,53 @@
 #include <cstring>
 #include <yak/log.h>
 
-#include <x86_64/asm.h>
+namespace yak {
 
-static constinit char early_buf[4096] = {0};
-static constinit size_t early_buf_pos = 0;
+static volatile bool early_print_lock = false;
 
-constexpr int COM1 = 0x3F8;
-
-void early_putc(const char c) {
-  while (!(asm_inb(COM1 + 5) & 0x20))
-    asm volatile("pause");
-
-  asm_outb(COM1, c);
-}
-
-void early_puts(const char *buf) {
-  for (size_t i = 0; buf[i] != '\0'; i++) {
-    if (buf[i] == '\n') {
-      early_putc('\r');
-    }
-    early_putc(buf[i]);
-  }
-}
+constinit char early_buf[4096] = {0};
+constinit size_t early_buf_pos = 0;
 
 void printk_early(const char *fmt, ...) {
+  if (early_print_lock)
+    return;
+
+  early_print_lock = true;
 
   va_list args;
   va_start(args, fmt);
 
-  int written = npf_vsnprintf(early_buf + early_buf_pos,
-                              sizeof(early_buf) - early_buf_pos, fmt, args);
+  size_t remaining = sizeof(early_buf) - early_buf_pos;
+  if (remaining <= 1) {
+    early_buf_pos = 0;
+    remaining = sizeof(early_buf);
+  }
+
+  int written = npf_vsnprintf(early_buf + early_buf_pos, remaining, fmt, args);
 
   va_end(args);
 
   if (written > 0) {
-    early_puts(early_buf + early_buf_pos);
+    size_t actual_len =
+        ((size_t)written >= remaining) ? (remaining - 1) : (size_t)written;
 
-    early_buf_pos += (size_t)written;
-    if (early_buf_pos >= sizeof(early_buf)) {
-      early_buf_pos = 0;
-      memset(early_buf, 0, sizeof(early_buf));
-    }
+    early_puts(early_buf + early_buf_pos, actual_len);
+
+    early_buf_pos += actual_len;
 
     early_buf[early_buf_pos] = '\0';
   }
+
+  if (early_buf_pos > sizeof(early_buf) - 64) {
+    early_buf_pos = 0;
+  }
+
+  early_print_lock = false;
 }
 
 void vprintk(LogLevel level, const char *fmt, va_list args) {}
 
 [[gnu::format(printf, 2, 3)]]
 void printk(LogLevel level, const char *fmt, ...) {}
+
+} // namespace yak

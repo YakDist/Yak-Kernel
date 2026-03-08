@@ -1,6 +1,8 @@
 #include <cstddef>
 #include <yak/log.h>
 
+namespace yak {
+
 /* Declared in the linker script */
 extern "C" void (*__init_array_start[])(void);
 extern "C" void (*__init_array_end[])(void);
@@ -14,7 +16,9 @@ void run_init_array() {
 }
 
 extern "C" void kernel_entry() {
-  printk_early("Hello World\n");
+  printk_early("Booting Yak v%d.%d.%d\n", 1, 0, 0);
   run_init_array();
   asm volatile("cli; hlt");
 }
+
+} // namespace yak
