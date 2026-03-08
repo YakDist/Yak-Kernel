@@ -1,0 +1,29 @@
+menu "Compiler options"
+	config LTO
+		bool "Enable LTO"
+		default n
+		help
+			Enable Link-time-optimization for the kernel
+
+	config STACK_CANARIES
+		bool "Enable Stack canaries"
+		default y
+		help
+			Enable the stack protector code
+
+	menu "Sanitizers"
+		config UBSAN
+			bool "Enable UBSAN"
+			default n
+			help
+				Enable the Undefined-Behaviour sanitizer
+	endmenu
+endmenu
+
+menu "Build options"
+	config DEBUG
+		bool "Enable Debugging"
+		default y
+		help
+			Enable debug support
+endmenu

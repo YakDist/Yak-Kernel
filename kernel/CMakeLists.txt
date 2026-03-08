@@ -55,36 +55,59 @@ yak_defines(
 	${YAK_ARCH}
 )
 
-yak_compile_options(
+if (CONFIG_STACK_CANARIES)
+	yak_compile_options(
 	-fstack-protector-strong
 	-fstack-check
 	-mstack-protector-guard=global
-)
+	)
+else()
+	yak_compile_options(-fno-stack-protector)
+endif()
+
+if (CONFIG_LTO)
+	target_enable_lto(yak)
+endif()
+
+if (CONFIG_UBSAN)
+	yak_compile_options(
+		-fsanitize=undefined
+	)
+endif()
 
 yak_compile_options(
 	-ffreestanding
 	-nostdinc
 	-fno-omit-frame-pointer
 	-fno-strict-aliasing
+	-fno-semantic-interposition
+	-fvisibility=hidden
 	-mgeneral-regs-only
 	-pipe
 	-fdata-sections
 	-ffunction-sections
 	-fno-pie
 	-fno-pic
+	-fno-plt
 	-Wall
 	-Wextra
+	-Wpedantic
+	-Wshadow
+	#-Wconversion
+	-Wnull-dereference
+	$<$<CXX_COMPILER_ID:Clang>:-Wthread-safety>
+	-Wformat=2
 	$<$<COMPILE_LANGUAGE:CXX>:-fno-threadsafe-statics>
-	$<$<CXX_COMPILER_ID:Clang>:-fstrict-vtable-pointers>
 	$<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
 	$<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
 	$<$<COMPILE_LANGUAGE:CXX>:-fcheck-new>
+	$<$<COMPILE_LANGUAGE:CXX>:-fno-use-cxa-atexit>
+	$<$<CXX_COMPILER_ID:Clang>:-fstrict-vtable-pointers>
 )
 
 yak_link_options(
 	-nostdlib
 	-static
-	-no-pie
 	-Wl,-gc-sections
 )
 
