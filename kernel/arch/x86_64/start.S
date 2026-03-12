@@ -60,3 +60,5 @@ __idle_stack_bot:
 	.type __idle_stack_top, @object
 	.globl __idle_stack_top
 __idle_stack_top:
+
+.section .note.GNU-stack,"",%progbits
