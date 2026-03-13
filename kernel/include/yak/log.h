@@ -51,7 +51,11 @@ void printk(LogLevel level, const char *fmt, ...);
 #endif
 
 // clang-format off
+#if CONFIG_DEBUG
 #define pr_debug(fmt, ...) yak::printk(yak::LogLevel::Debug, pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
+#else
+#define pr_debug(...) do {} while(0)
+#endif
 #define pr_trace(fmt, ...) yak::printk(yak::LogLevel::Trace, pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
 #define pr_info(fmt, ...)  yak::printk(yak::LogLevel::Info,  pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
 #define pr_warn(fmt, ...)  yak::printk(yak::LogLevel::Warn,  pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
