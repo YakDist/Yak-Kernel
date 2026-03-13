@@ -20,13 +20,13 @@ SECTIONS
 		KEEP(*(.limine_requests_end))
 	} :limine_requests
 
-	. = ALIGN(CONSTANT(MAXPAGESIZE));
+	. = ALIGN(4K);
 
 	.text : {
 		*(.text .text.*)
 	} :text
 
-	. = ALIGN(CONSTANT(MAXPAGESIZE));
+	. = ALIGN(4K);
 
 	.rodata : {
 		*(.rodata .rodata.*)
@@ -40,14 +40,26 @@ SECTIONS
 		*(.note.gnu.build-id)
 	} :rodata
 
-	. = ALIGN(CONSTANT(MAXPAGESIZE));
+	.note : {
+		*(.note .note.*)
+	} :rodata
+
+	.eh_frame_hdr : {
+		*(.eh_frame_hdr)
+	} :rodata
+
+	.eh_frame : {
+		*(.eh_frame)
+	} :rodata
+
+	. = ALIGN(4K);
 
 	.data : {
 		*(.data .data.*)
 	} :data
 
 	/* Store the PERCPU area on a new page */
-	. = ALIGN(CONSTANT(MAXPAGESIZE));
+	. = ALIGN(4K);
 
 	.percpu : {
 		PROVIDE_HIDDEN(__percpu_start = .);
@@ -55,16 +67,15 @@ SECTIONS
 		PROVIDE_HIDDEN(__percpu_end = .);
 	} :data
 
-	. = ALIGN(CONSTANT(MAXPAGESIZE));
+	. = ALIGN(4K);
 
 	.bss : {
 		*(.bss .bss.*)
 		*(COMMON)
 	} :data
 
-	/* Discard .note.* and .eh_frame* since they may cause issues on some hosts. */
 	/DISCARD/ : {
-		*(.eh_frame*)
+		*(.comment)
 		*(.note .note.*)
 	}
 }

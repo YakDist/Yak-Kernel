@@ -6,5 +6,11 @@ help:  ## Display this help
 menuconfig: ## Open menuconfig
 	ninja -C build menuconfig
 
+local_build: ## Build local CMake build
+	ninja -C build
+
 local_setup: ## Setup local CMake build (With compile commands)
-	cmake -S . -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	cmake -S . -B build -G Ninja \
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+		-DYAK_ARCH=x86_64 \
+		-DYAK_TOOLCHAIN=clang

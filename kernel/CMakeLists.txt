@@ -5,18 +5,15 @@ include(build.cmake)
 
 find_package(PkgConfig REQUIRED)
 
-string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _processor)
-if (_processor STREQUAL "x86_64")
-	set(YAK_ARCH "x86_64" CACHE STRING "Project architecture" FORCE)
-else()
-	message(FATAL_ERROR
-		"Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}"
-	)
-endif()
-
 pkg_check_modules(FREESTND_C_HDRS REQUIRED IMPORTED_TARGET freestnd-c-hdrs-x86_64)
 pkg_check_modules(FREESTND_CXX_HDRS REQUIRED IMPORTED_TARGET freestnd-cxx-hdrs-x86_64)
 pkg_check_modules(FRIGG REQUIRED IMPORTED_TARGET frigg)
+
+target_include_directories(yak PRIVATE
+	${FREESTND_C_HDRS_INCLUDE_DIRS}
+	${FREESTND_CXX_HDRS_INCLUDE_DIRS}
+	${FRIGG_INCLUDE_DIRS}
+)
 
 find_package(Git QUIET)
 
@@ -75,13 +72,30 @@ if (CONFIG_UBSAN)
 	)
 endif()
 
+if (CONFIG_BUILD_TYPE_DEBUG)
+	yak_compile_options(-O0)
+elseif(CONFIG_BUILD_TYPE_RELEASE)
+	yak_compile_options(-O2)
+elseif(CONFIG_BUILD_TYPE_MINSIZEREL)
+	yak_compile_options(-Os)
+elseif(CONFIG_BUILD_TYPE_FASTFLAGSREL)
+	yak_compile_options(-O3)
+endif()
+
+yak_compile_options(
+	-ffile-prefix-map=${PROJECT_ROOT_NORMALIZED}=./
+	-fmacro-prefix-map=${PROJECT_ROOT_NORMALIZED}=./
+)
+
 yak_compile_options(
 	-ffreestanding
+	-ggdb3
 	-nostdinc
 	-fno-omit-frame-pointer
 	-fno-strict-aliasing
 	-fno-semantic-interposition
 	-fvisibility=hidden
+	-fasynchronous-unwind-tables
 	-mgeneral-regs-only
 	-pipe
 	-fdata-sections
@@ -93,10 +107,10 @@ yak_compile_options(
 	-Wextra
 	-Wpedantic
 	-Wshadow
+	-Wimplicit-fallthrough
 	#-Wconversion
 	-Wnull-dereference
 	$<$<CXX_COMPILER_ID:Clang>:-Wthread-safety>
-	-Wformat=2
 	$<$<COMPILE_LANGUAGE:CXX>:-fno-threadsafe-statics>
 	$<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
 	$<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
@@ -107,8 +121,8 @@ yak_compile_options(
 
 yak_link_options(
 	-nostdlib
-	-static
-	-Wl,-gc-sections
+	--eh-frame-hdr
+	-gc-sections
 )
 
 yak_link(

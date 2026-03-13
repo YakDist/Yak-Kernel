@@ -18,5 +18,5 @@ yak_compile_options(
 
 yak_link_options(
 	-T${CMAKE_CURRENT_LIST_DIR}/kernel.ld
-	-Wl,-zmax-page-size=0x1000
+	-zmax-page-size=0x1000
 )

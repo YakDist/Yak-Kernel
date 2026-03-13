@@ -1,6 +1,6 @@
 orsource "arch/$ARCH/Kconfig"
 
-menu "Compiler options"
+menu "Build options"
 	config LTO
 		bool "Enable LTO"
 		default n
@@ -20,12 +20,25 @@ menu "Compiler options"
 			help
 				Enable the Undefined-Behaviour sanitizer
 	endmenu
-endmenu
 
-menu "Build options"
 	config DEBUG
 		bool "Enable Debugging"
 		default y
 		help
 			Enable debug support
+
+	choice
+		prompt "Build type"
+		default BUILD_TYPE_DEBUG
+	
+	config BUILD_TYPE_DEBUG
+		bool "Debug"
+	
+	config BUILD_TYPE_RELEASE
+		bool "Release"
+	
+	config BUILD_TYPE_MINSIZEREL
+		bool "MinSizeRel"
+	
+	endchoice
 endmenu
