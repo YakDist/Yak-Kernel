@@ -32,6 +32,9 @@ set(PROJECT_ROOT ${CMAKE_SOURCE_DIR})
 cmake_path(NORMAL_PATH PROJECT_ROOT OUTPUT_VARIABLE PROJECT_ROOT_NORMALIZED)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_ROOT}/cmake)
 
+
+set(AUTOCONF_H ${CMAKE_BINARY_DIR}/generated/include/yak/config.h)
+
 include(kconfig)
 
 add_subdirectory(kernel)

@@ -41,9 +41,7 @@ yak_add_includes(
 )
 
 target_include_directories(yak PRIVATE
-	# Kconfig
-	${AUTOCONF_DIR}
-	# Version
+	# Contains Kconfig and Version headers
 	${CMAKE_BINARY_DIR}/generated/include
 )
 

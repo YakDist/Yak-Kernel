@@ -1,6 +1,8 @@
 #include <cstddef>
+#include <yak/initgraph.h>
 #include <yak/log.h>
 #include <yak/version.h>
+#include <yak/config.h>
 
 namespace yak {
 
@@ -16,7 +18,16 @@ void run_init_array() {
   }
 }
 
+#if CONFIG_BOOT_BANNER
+const char banner[] = {
+#embed "banner.txt" if_empty()
+};
+#endif
+
 extern "C" void kernel_entry() {
+#if CONFIG_BOOT_BANNER
+  pr_info("%s", banner);
+#endif
   pr_info("Booting Yak v" KERNEL_VERSION_STR " (commit: " KERNEL_GIT_HASH
           ")\n");
   run_init_array();

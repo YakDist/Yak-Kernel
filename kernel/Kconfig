@@ -42,3 +42,9 @@ menu "Build options"
 	
 	endchoice
 endmenu
+
+menu "General Options"
+	config BOOT_BANNER
+		bool "Print Boot Banner"
+		default y
+endmenu
