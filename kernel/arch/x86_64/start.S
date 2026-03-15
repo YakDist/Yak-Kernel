@@ -7,8 +7,6 @@
 	.balign 16
 	.type exe_entry, @function
 exe_entry:
-	lea __idle_stack_top(%rip), %rsp
-
 	# First, setup kernel stack canary
 
 	# Check for RDRAND support
@@ -49,16 +47,5 @@ exe_entry:
 	.type __stack_chk_guard, @object
 __stack_chk_guard:
 	.quad 0
-
-.bss
-
-	.balign 16
-	.type __idle_stack_bot, @object
-__idle_stack_bot:
-
-	.skip 16384
-	.type __idle_stack_top, @object
-	.globl __idle_stack_top
-__idle_stack_top:
 
 .section .note.GNU-stack,"",%progbits
