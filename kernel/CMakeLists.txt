@@ -42,8 +42,10 @@ yak_add_includes(
 )
 
 target_include_directories(yak PRIVATE
-	# Contains Kconfig and Version headers
+	# Contains version.h
 	${CMAKE_BINARY_DIR}/generated/include
+	# Contains config.h
+	${CMAKE_BINARY_DIR}/kconfig/include/generated
 )
 
 yak_defines(

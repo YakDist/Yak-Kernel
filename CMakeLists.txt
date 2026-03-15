@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 set(YAK_ARCH "" CACHE STRING "Kernel architecture")
+set(BUILD_CONFIG "default" CACHE STRING "Build defconfig")
 
 if (NOT YAK_ARCH STREQUAL "x86_64")
 	message(FATAL_ERROR
@@ -32,8 +33,7 @@ set(PROJECT_ROOT ${CMAKE_SOURCE_DIR})
 cmake_path(NORMAL_PATH PROJECT_ROOT OUTPUT_VARIABLE PROJECT_ROOT_NORMALIZED)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_ROOT}/cmake)
 
-
-set(AUTOCONF_H ${CMAKE_BINARY_DIR}/generated/include/yak/config.h)
+set(AUTOCONF_H ${CMAKE_BINARY_DIR}/kconfig/include/generated/yak/config.h)
 
 include(kconfig)
 
