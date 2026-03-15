@@ -20,7 +20,7 @@ static bool printk_available = false;
 
 static volatile bool early_print_lock = false;
 
-constinit char early_buf[4096];
+char early_buf[4096];
 constinit size_t early_buf_pos = 0;
 
 [[gnu::format(printf, 1, 0)]]

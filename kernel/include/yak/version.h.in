@@ -8,4 +8,11 @@
 #define KERNEL_VERSION_MINOR @PROJECT_VERSION_MINOR@
 #define KERNEL_VERSION_PATCH @PROJECT_VERSION_PATCH@
 
+#define KERNEL_VERSION(maj, min, patch)                                        \
+  (((maj) & 0xFF) << 16 | ((min) & 0xFF) << 8 | ((patch) & 0xFF))
+
+#define KERNEL_CURRENT_VERSION                                                 \
+  KERNEL_VERSION(KERNEL_VERSION_MAJOR, KERNEL_VERSION_MINOR,                   \
+                 KERNEL_VERSION_PATCH)
+
 #endif
