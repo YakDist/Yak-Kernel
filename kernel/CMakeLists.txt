@@ -38,6 +38,7 @@ add_subdirectory(lib)
 yak_add_includes(
 	include
 	arch
+	arch/${YAK_ARCH}/include
 )
 
 target_include_directories(yak PRIVATE
@@ -103,7 +104,6 @@ yak_compile_options(
 	-fno-plt
 	-Wall
 	-Wextra
-	-Wpedantic
 	-Wshadow
 	-Wimplicit-fallthrough
 	#-Wconversion

@@ -11,7 +11,8 @@ namespace yak {
 #undef CONFIG_LOG_TIMESTAMPS
 
 enum class LogLevel : uint8_t {
-  Debug = 1,
+  Raw = 0,
+  Debug,
   Trace,
   Info,
   Warn,
@@ -57,6 +58,7 @@ void printk(LogLevel level, const char *fmt, ...);
 #else
 #define pr_debug(...) do {} while(0)
 #endif
+#define pr_raw(fmt, ...)   yak::printk(yak::LogLevel::Raw,   pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
 #define pr_trace(fmt, ...) yak::printk(yak::LogLevel::Trace, pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
 #define pr_info(fmt, ...)  yak::printk(yak::LogLevel::Info,  pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)
 #define pr_warn(fmt, ...)  yak::printk(yak::LogLevel::Warn,  pr_fmt(fmt) __VA_OPT__(,) __VA_ARGS__)

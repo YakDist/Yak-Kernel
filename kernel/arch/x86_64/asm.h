@@ -31,3 +31,26 @@ static inline uint32_t asm_inl(uint32_t port) {
   asm volatile("in %%dx, %%eax" : "=a"(ret) : "d"(port));
   return ret;
 }
+
+static inline void asm_wrmsr(uint32_t msr, uint64_t value) {
+  uint32_t low = (uint32_t)value;
+  uint32_t high = (uint32_t)(value >> 32);
+  asm volatile("wrmsr" ::"c"(msr), "a"(low), "d"(high) : "memory");
+}
+
+#define FN_CR(REG)                                                             \
+  static inline uint64_t asm_rdcr##REG() {                                     \
+    uint64_t data;                                                             \
+    asm volatile("mov %%cr" #REG ", %0" : "=r"(data));                         \
+    return data;                                                               \
+  }                                                                            \
+  static inline void asm_wrcr##REG(uint64_t val) {                             \
+    asm volatile("mov %0, %%cr" #REG ::"a"(val));                              \
+  }
+
+FN_CR(0);
+FN_CR(1);
+FN_CR(2);
+FN_CR(3);
+FN_CR(4);
+FN_CR(8);

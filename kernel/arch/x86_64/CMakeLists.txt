@@ -1,6 +1,8 @@
 yak_add_sources(
 	start.S
 	early_log.cpp
+	idt.cpp
+	idt.S
 )
 
 yak_compile_options(
