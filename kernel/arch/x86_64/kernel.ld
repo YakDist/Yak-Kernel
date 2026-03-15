@@ -63,6 +63,7 @@ SECTIONS
 
 	.percpu : {
 		PROVIDE_HIDDEN(__percpu_start = .);
+		KEEP(*(.percpu.cpudata))
 		KEEP(*(.percpu .percpu.*))
 		PROVIDE_HIDDEN(__percpu_end = .);
 	} :data
