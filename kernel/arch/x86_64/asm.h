@@ -38,6 +38,12 @@ static inline void asm_wrmsr(uint32_t msr, uint64_t value) {
   asm volatile("wrmsr" ::"c"(msr), "a"(low), "d"(high) : "memory");
 }
 
+static inline uint64_t asm_rdmsr(uint32_t msr) {
+  uint32_t low, high;
+  asm volatile("rdmsr" : "=a"(low), "=d"(high) : "c"(msr) : "memory");
+  return ((uint64_t)high << 32) | (uint64_t)low;
+}
+
 #define FN_CR(REG)                                                             \
   static inline uint64_t asm_rdcr##REG() {                                     \
     uint64_t data;                                                             \
