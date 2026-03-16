@@ -5,6 +5,8 @@ yak_add_sources(
 	idt.cpp
 	idt.S
 	gdt.cpp
+	address_space.cpp
+	syscall.cpp
 )
 
 yak_compile_options(
