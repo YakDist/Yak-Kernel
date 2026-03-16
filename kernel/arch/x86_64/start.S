@@ -1,12 +1,15 @@
 .extern kernel_entry
 .extern __percpu_start
 
+#include <yak/config.h>
+
 .text
 	
 	.globl exe_entry 
 	.balign 16
 	.type exe_entry, @function
 exe_entry:
+#if CONFIG_STACK_CANARIES
 	# First, setup kernel stack canary
 
 	# Check for RDRAND support
@@ -36,16 +39,19 @@ exe_entry:
 3:
 	# RAX now contains some (hopefully) random value
 	movq %rax, __stack_chk_guard(%rip)
+#endif
 
 	call kernel_entry
 
 	cli
 	ud2
 
+#if CONFIG_STACK_CANARIES
 .data
 	.globl __stack_chk_guard
 	.type __stack_chk_guard, @object
 __stack_chk_guard:
 	.quad 0
+#endif
 
 .section .note.GNU-stack,"",%progbits
