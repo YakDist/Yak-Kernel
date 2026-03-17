@@ -44,6 +44,13 @@ static inline uint64_t asm_rdmsr(uint32_t msr) {
   return ((uint64_t)high << 32) | (uint64_t)low;
 }
 
+static inline void asm_cpuid(int leaf, int subleaf, uint32_t *eax,
+                             uint32_t *ebx, uint32_t *ecx, uint32_t *edx) {
+  asm volatile("cpuid"
+               : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
+               : "a"(leaf), "c"(subleaf));
+}
+
 #define FN_CR(REG)                                                             \
   static inline uint64_t asm_rdcr##REG() {                                     \
     uint64_t data;                                                             \

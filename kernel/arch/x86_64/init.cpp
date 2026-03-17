@@ -1,27 +1,65 @@
 #include <cstdint>
 #include <x86_64/asm.h>
+#include <x86_64/control_regs.h>
+#include <x86_64/cpu_features.h>
 #include <x86_64/gdt.h>
 #include <x86_64/idt.h>
 #include <x86_64/msr.h>
 #include <yak/cpudata.h>
 #include <yak/init.h>
+#include <yak/panic.h>
 
 namespace yak::arch {
-extern "C" char __percpu_start[];
-extern "C" char __percpu_end[];
+
+CpuFeatures bsp_cpu_features;
 
 extern void syscall_entry(void);
 
 static void setup_syscalls() {
   uint64_t efer = asm_rdmsr(msr::EFER);
-  efer |= 1; // SCE bit: enable syscall/sysret
+  efer |= efer::SCE;
   asm_wrmsr(msr::EFER, efer);
+
   asm_wrmsr(msr::LSTAR, (uintptr_t)syscall_entry);
+
   uint64_t star = asm_rdmsr(msr::STAR);
   star |= ((uint64_t)GDT_SEL_USER_SYSCALL << 48);
   star |= ((uint64_t)GDT_SEL_KERNEL_CODE << 32);
   asm_wrmsr(msr::STAR, star);
 }
+
+namespace pat {
+enum class Type : uint8_t {
+  UC = 0x0,
+  WC = 0x1,
+  WT = 0x4,
+  WP = 0x5,
+  WB = 0x6,
+  UC_MINUS = 0x7,
+};
+
+constexpr uint64_t entry(Type t, int index) {
+  return static_cast<uint64_t>(t) << (index * 8);
+}
+} // namespace pat
+
+// clang-format off
+static void pat_init() {
+  if (!bsp_cpu_features.pat) panic("PAT unsupported.");
+
+  using namespace pat;
+
+  constexpr uint64_t pat =
+          entry(Type::WB, 0)
+        | entry(Type::WT, 1)
+        | entry(Type::UC_MINUS, 2)
+        | entry(Type::UC, 3)
+        | entry(Type::WP, 4)
+        | entry(Type::WC, 5);
+
+    asm_wrmsr(msr::PAT, pat);
+}
+// clang-format on
 
 static void setup_cpu() {
   idt_reload();
@@ -33,6 +71,40 @@ static void setup_cpu() {
   asm_wrcr8(0);
 
   setup_syscalls();
+
+  pat_init();
+
+  uint64_t cr0 = asm_rdcr0();
+  cr0 &= ~(cr0::CD | cr0::NW);
+  cr0 |= cr0::WP;
+  asm_wrcr0(cr0);
+
+  uint64_t cr4 = asm_rdcr4();
+  if (bsp_cpu_features.pge)
+    cr4 |= cr4::PGE;
+  if (bsp_cpu_features.pse)
+    cr4 |= cr4::PSE;
+  asm_wrcr4(cr4);
+
+  if (bsp_cpu_features.nx) {
+    uint64_t efer = asm_rdmsr(msr::EFER);
+    efer |= efer::NXE;
+    asm_wrmsr(msr::EFER, efer);
+  }
+}
+
+static void detect_features(CpuFeatures &f) {
+  uint32_t eax, ebx, ecx, edx;
+  asm_cpuid(0x80000001, 0, &eax, &ebx, &ecx, &edx);
+  f.nx = edx & (1 << 20);
+  f.pdpe1gb = edx & (1 << 26);
+  asm_cpuid(1, 0, &eax, &ebx, &ecx, &edx);
+  f.pge = edx & (1 << 13);
+  f.pat = edx & (1 << 16);
+  f.pcid = ecx & (1 << 17);
+  f.pse = edx & (1 << 3);
+  f.xsave = ecx & (1 << 26);
+  f.avx = ecx & (1 << 28);
 }
 
 void early_init() {
@@ -40,6 +112,8 @@ void early_init() {
   //
   // kernel_entry() makes sure that cpudata->self already points to self
   asm_wrmsr(msr::GSBASE, (uint64_t)__percpu_start);
+
+  detect_features(bsp_cpu_features);
 
   idt_init();
 
