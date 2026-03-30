@@ -30,6 +30,9 @@ SECTIONS
 
 	.rodata : {
 		*(.rodata .rodata.*)
+	} :rodata
+
+	.init_array : ALIGN(16) {
 		PROVIDE_HIDDEN(__init_array_start = .);
 		KEEP (*(SORT_BY_INIT_PRIORITY(.init_array.*) SORT_BY_INIT_PRIORITY(.ctors.*)))
 		KEEP (*(.init_array EXCLUDE_FILE (*crtbegin.o *crtbegin?.o *crtend.o *crtend?.o ) .ctors))
@@ -70,13 +73,12 @@ SECTIONS
 
 	. = ALIGN(4K);
 
-	.bss : {
+	.bss (NOLOAD) : ALIGN(4K) {
 		*(.bss .bss.*)
 		*(COMMON)
 	} :data
 
 	/DISCARD/ : {
 		*(.comment)
-		*(.note .note.*)
 	}
 }

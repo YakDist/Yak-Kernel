@@ -31,8 +31,9 @@ add_custom_target(update_version_header ALL
 
 add_dependencies(yak update_version_header)
 
-add_subdirectory(arch/${YAK_ARCH})
+add_subdirectory(arch)
 add_subdirectory(core)
+add_subdirectory(vm)
 add_subdirectory(lib)
 
 yak_add_includes(

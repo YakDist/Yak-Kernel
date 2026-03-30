@@ -18,6 +18,10 @@ function(yak_link_options)
 	target_link_options(yak PRIVATE ${ARGN})
 endfunction()
 
+function(yak_link_depends)
+	set_target_properties(yak PROPERTIES LINK_DEPENDS ${ARGN})
+endfunction()
+
 function(yak_defines)
 	target_compile_definitions(yak PRIVATE ${ARGN})
 endfunction()

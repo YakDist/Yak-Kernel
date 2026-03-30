@@ -86,6 +86,36 @@ template <size_t NBits> struct AtomicBitset {
             bitset_detail::mask(bit)) != 0;
   }
 
+  bool compare_exchange_bit(size_t bit, bool expected, bool desired) {
+    size_t idx = bitset_detail::word_idx(bit);
+    bitset_word_t mask = bitset_detail::mask(bit);
+
+    auto &word = words[idx];
+
+    bitset_word_t old = word.load(std::memory_order_acquire);
+
+    while (true) {
+      bool current = (old & mask) != 0;
+
+      if (current != expected)
+        return false;
+
+      bitset_word_t new_val;
+      if (desired)
+        new_val = old | mask; // set bit
+      else
+        new_val = old & ~mask; // clear bit
+
+      // Try CAS
+      if (word.compare_exchange_weak(old, new_val, std::memory_order_acq_rel,
+                                     std::memory_order_acquire)) {
+        return true;
+      }
+
+      // CAS failed
+    }
+  }
+
   template <typename Fn> void for_each_set_bit(Fn f) const {
     for (size_t w = 0; w < WORD_COUNT; w++) {
       bitset_word_t tmp = words[w].load(std::memory_order_acquire);

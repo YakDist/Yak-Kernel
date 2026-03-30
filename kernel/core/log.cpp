@@ -12,23 +12,22 @@
 
 #include <cstdarg>
 #include <cstring>
+#include <frg/mutex.hpp>
 #include <yak/log.h>
+#include <yak/spinlock.h>
 
 namespace yak {
 
 static bool printk_available = false;
 
-static volatile bool early_print_lock = false;
+static constinit InterruptSpinLock early_printk_lock;
 
 char early_buf[4096];
 constinit size_t early_buf_pos = 0;
 
 [[gnu::format(printf, 1, 0)]]
 static void printk_early(const char *fmt, va_list args) {
-  if (early_print_lock)
-    return;
-
-  early_print_lock = true;
+  auto guard = frg::guard(&early_printk_lock);
 
   size_t remaining = sizeof(early_buf) - early_buf_pos;
   if (remaining <= 1) {
@@ -52,8 +51,6 @@ static void printk_early(const char *fmt, va_list args) {
   if (early_buf_pos > sizeof(early_buf) - 64) {
     early_buf_pos = 0;
   }
-
-  early_print_lock = false;
 }
 
 [[gnu::format(printf, 2, 0)]]

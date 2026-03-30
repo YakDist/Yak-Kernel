@@ -1,3 +1,5 @@
+set(YAK_INCLUDE_LIMINE ON PARENT_SCOPE)
+
 yak_add_sources(
 	start.S
 	early_log.cpp
@@ -26,4 +28,8 @@ yak_compile_options(
 yak_link_options(
 	-T${CMAKE_CURRENT_LIST_DIR}/kernel.ld
 	-zmax-page-size=0x1000
+)
+
+yak_link_depends(
+	${CMAKE_CURRENT_LIST_DIR}/kernel.ld
 )

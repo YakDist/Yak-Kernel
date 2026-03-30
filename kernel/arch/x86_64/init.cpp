@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <limine-generic/init.h>
 #include <x86_64/asm.h>
 #include <x86_64/control_regs.h>
 #include <x86_64/cpu_features.h>
@@ -119,4 +120,7 @@ void early_init() {
 
   setup_cpu();
 }
+
+void mem_init() { limine::mem_init(); }
+
 } // namespace yak::arch
