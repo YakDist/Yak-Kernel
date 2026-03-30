@@ -2,7 +2,12 @@
 #include <x86_64/asm.h>
 #include <x86_64/gdt.h>
 #include <x86_64/idt.h>
+#include <yak/arch-intr.h>
+#include <yak/config.h>
+#include <yak/cpudata.h>
+#include <yak/ipl.h>
 #include <yak/log.h>
+#include <yak/panic.h>
 
 namespace yak::arch {
 struct [[gnu::packed]] IdtEntry {
@@ -189,8 +194,28 @@ extern "C" void __isr_c_entry(Context *frame) {
       uintptr_t addr = asm_rdcr2();
       pr_error("Unhandled #PF at 0x%lx\n", addr);
     }
-    pr_error("Exception %s received (0x%lx)\n",
-             exception_names[frame->number], frame->number);
+    pr_error("Exception %s received (0x%lx)\n", exception_names[frame->number],
+             frame->number);
+  } else {
+    Ipl ipl = iplget();
+    Ipl level_ipl = static_cast<Ipl>(frame->number >> 4);
+
+#if CONFIG_LAZY_IPL
+    if (ipl >= level_ipl && CPUDATA_LOAD(md.hard_ipl) < level_ipl) {
+      asm_wrcr8(static_cast<unsigned int>(level_ipl));
+      CPUDATA_STORE(md.hard_ipl, level_ipl);
+      panic("impl: defer interrupt");
+      return;
+    }
+#endif
+
+    iplr(level_ipl);
+    enable_interrupts();
+
+    pr_error("Unhandled IRQ: #%ld\n", frame->number);
+
+    disable_interrupts();
+    iplx(ipl);
   }
 
   dump_context(frame, true);

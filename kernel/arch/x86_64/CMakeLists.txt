@@ -7,6 +7,7 @@ yak_add_sources(
 	gdt.cpp
 	address_space.cpp
 	syscall.cpp
+	ipl.cpp
 )
 
 yak_compile_options(

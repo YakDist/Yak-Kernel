@@ -1,0 +1,7 @@
+menu "Interrupts"
+	config LAZY_IPL
+		bool "Enable lazy cr8 update"
+		default y
+		help
+			Especially helpful when running under virtualization
+endmenu
