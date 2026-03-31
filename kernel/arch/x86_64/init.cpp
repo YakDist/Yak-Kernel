@@ -172,9 +172,18 @@ void post_memblock() {
              "could not allocate early table buffer"));
   pr_debug("early table buffer: 0x%p\n", buf);
 
+  auto total_before =
+      boot_memblock.usable.total_size + boot_memblock.reserved.total_size;
+
   uacpi_setup_early_table_access(buf, PAGE_SIZE);
 
   parse_numa();
+
+  auto total_after =
+      boot_memblock.usable.total_size + boot_memblock.reserved.total_size;
+
+  // try to catch any memblock insertion bugs
+  assert(total_before == total_after);
 }
 
 } // namespace yak::arch

@@ -10,7 +10,7 @@
 #include <yak/panic.h>
 #include <yak/spinlock.h>
 #include <yak/vm/address.h>
-#include <yak/vm/alloc.h>
+#include <yak/vm/flags.h>
 #include <yak/vm/page.h>
 #include <yak/vm/pmm.h>
 

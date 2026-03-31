@@ -3,7 +3,8 @@
 #include <yak/arch-mm.h>
 #include <yak/log.h>
 #include <yak/math.h>
-#include <yak/vm/alloc.h>
+#include <yak/util.h>
+#include <yak/vm/flags.h>
 #include <yak/vm/memblock.h>
 
 namespace yak {
@@ -24,6 +25,22 @@ int MemblockType::find_insert_index(paddr_t base) const {
       v.begin(), v.end(), base,
       [](const MemblockRegion &r, paddr_t b) { return r.base < b; });
   return static_cast<int>(std::distance(v.begin(), it));
+}
+
+std::optional<int> MemblockType::find_index(paddr_t pa, size_t size) const {
+  auto v = view();
+
+  auto it =
+      std::find_if(v.begin(), v.end(), [pa, size](const MemblockRegion &r) {
+        return r.base >= pa && r.end() <= pa + size;
+      });
+
+  if (it != v.end()) {
+    int index = static_cast<int>(std::distance(v.begin(), it));
+    return index;
+  }
+
+  return std::nullopt;
 }
 
 void MemblockType::insert(int index, paddr_t base, size_t size, int nid) {
@@ -54,6 +71,41 @@ void MemblockType::coalesce() {
     } else {
       i++;
     }
+  }
+}
+
+void MemblockType::assign_node_to_range(paddr_t base, size_t size, int nid) {
+  const paddr_t range_end = base + size;
+
+  int i = 0;
+  while (i < count) {
+    auto r = regions[i];
+
+    const paddr_t overlap_start = std::max(r.base, base);
+    const paddr_t overlap_end = std::min(r.end(), range_end);
+
+    // No overlap or node id already matches
+    if (overlap_start >= overlap_end || r.node_id == nid) {
+      i++;
+      continue;
+    }
+
+    // Remove the original region
+    remove(i);
+
+    // Left portion (before overlap)
+    if (r.base < overlap_start)
+      add(r.base, overlap_start - r.base, r.node_id);
+
+    // Portion assigned to new node
+    add(overlap_start, overlap_end - overlap_start, nid);
+
+    // Right portion (after overlap)
+    if (overlap_end < r.end())
+      add(overlap_end, r.end() - overlap_end, r.node_id);
+
+    // Move to next region
+    // DO NOT increment i here -> next region is now at index i
   }
 }
 
@@ -122,36 +174,41 @@ std::optional<vaddr_t> Memblock::allocate_virtual(size_t size, size_t align,
   return allocate(size, align, nid).transform(arch::p2v);
 }
 
-void Memblock::assign_node_to_range(paddr_t base, size_t size, int nid) {
-  const paddr_t range_end = base + size;
+void Memblock::free(paddr_t pa, size_t size) {
+  auto index =
+      expect(reserved.find_index(pa, size), "memblock free unreserved memory");
 
-  for (int i = 0; i < usable.count;) {
-    auto &r = usable.regions[i];
+  // Create a copy: after remove() the original slot no longer contains our
+  // region
+  auto r = reserved.regions[index];
 
-    const paddr_t overlap_start = std::max(r.base, base);
-    const paddr_t overlap_end = std::min(r.end(), range_end);
+  reserved.remove(index);
 
-    if (overlap_start >= overlap_end) {
-      i++;
-      continue;
-    }
+  paddr_t free_end = pa + size;
 
-    const paddr_t r_base = r.base;
-    const paddr_t r_end = r.end();
-    const int r_nid = r.node_id;
-
-    usable.remove(i);
-
-    if (r_base < overlap_start)
-      usable.add(r_base, overlap_start - r_base, r_nid);
-
-    usable.add(overlap_start, overlap_end - overlap_start, nid);
-
-    if (overlap_end < r_end)
-      usable.add(overlap_end, r_end - overlap_end, r_nid);
-
-    i++;
+  // Handle leftover space to the left
+  if (r.base < pa) {
+    reserved.add(r.base, pa - r.base, r.node_id);
   }
+
+  // Handle leftover space to the right
+  if (free_end < r.end()) {
+    reserved.add(free_end, r.end() - free_end, r.node_id);
+  }
+
+  // Add the free block back to usable memory
+  usable.add(pa, size, r.node_id);
+
+  coalesce_blocks();
+}
+
+void Memblock::free_virtual(vaddr_t va, size_t size) {
+  return free(arch::v2p(va), size);
+}
+
+void Memblock::assign_node_to_range(paddr_t base, size_t size, int nid) {
+  usable.assign_node_to_range(base, size, nid);
+  reserved.assign_node_to_range(base, size, nid);
 }
 
 } // namespace yak

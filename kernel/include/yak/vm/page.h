@@ -4,9 +4,14 @@
 #include <frg/list.hpp>
 #include <yak/arch-mm.h>
 #include <yak/vm/address.h>
-#include <yak/vm/alloc.h>
 
 namespace yak {
+
+enum class PageUse {
+  null,
+  Reserved,
+  Free,
+};
 
 struct [[gnu::aligned(64)]] Page {
   PageUse usage;

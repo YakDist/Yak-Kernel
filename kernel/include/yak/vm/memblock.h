@@ -4,15 +4,15 @@
 #include <optional>
 #include <span>
 #include <yak/vm/address.h>
-#include <yak/vm/alloc.h>
+#include <yak/vm/flags.h>
 
 namespace yak {
 constexpr int MEMBLOCK_MAX_REGIONS = 128;
 
 struct MemblockRegion {
-  paddr_t base;
-  size_t size;
-  int node_id;
+  paddr_t base = 0;
+  size_t size = 0;
+  int node_id = -1;
 
   paddr_t end() const { return base + size; }
 };
@@ -36,12 +36,15 @@ struct MemblockType {
 
   void add(paddr_t base, size_t size, int nid);
 
+  void assign_node_to_range(paddr_t base, size_t size, int nide);
+
   void print() const;
 
   void coalesce();
 
 private:
   int find_insert_index(paddr_t base) const;
+  std::optional<int> find_index(paddr_t base, size_t size) const;
   void insert(int index, paddr_t base, size_t size, int nid);
   void remove(int index);
 };
@@ -57,6 +60,9 @@ struct Memblock {
 
   std::optional<paddr_t> allocate(size_t size, size_t align, int nid);
   std::optional<vaddr_t> allocate_virtual(size_t size, size_t align, int nid);
+
+  void free(paddr_t pa, size_t size);
+  void free_virtual(vaddr_t va, size_t size);
 
   void assign_node_to_range(paddr_t base, size_t size, int nid);
 
