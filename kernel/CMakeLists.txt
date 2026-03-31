@@ -33,6 +33,7 @@ add_dependencies(yak update_version_header)
 
 add_subdirectory(arch)
 add_subdirectory(core)
+add_subdirectory(io)
 add_subdirectory(vm)
 add_subdirectory(lib)
 

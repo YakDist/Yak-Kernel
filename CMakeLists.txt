@@ -37,4 +37,6 @@ set(AUTOCONF_H ${CMAKE_BINARY_DIR}/kconfig/include/generated/yak/config.h)
 
 include(kconfig)
 
+include(vendor/uacpi/uacpi.cmake)
+
 add_subdirectory(kernel)

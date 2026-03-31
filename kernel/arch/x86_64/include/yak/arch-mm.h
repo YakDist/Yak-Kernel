@@ -16,4 +16,9 @@ inline vaddr_t p2v(paddr_t pa) {
   return static_cast<vaddr_t>(HHDM_BASE + pa);
 }
 
+[[gnu::pure]]
+inline paddr_t v2p(vaddr_t va) {
+  return static_cast<vaddr_t>(va - HHDM_BASE);
+}
+
 } // namespace yak::arch

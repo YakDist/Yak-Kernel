@@ -1,0 +1,3 @@
+[submodule "vendor/uacpi"]
+	path = vendor/uacpi
+	url = https://github.com/uACPI/uACPI

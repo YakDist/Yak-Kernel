@@ -73,6 +73,10 @@ struct tu_invalid_builtin_data {
   unsigned char kind;
 };
 
+struct tu_missing_return {
+  struct tu_source_location location;
+};
+
 static void tu_print_location(const char *message,
                               struct tu_source_location loc) {
   pr_error("%s at file %s, line %d, column %d\n", message, loc.file, loc.line,
@@ -159,6 +163,10 @@ void __ubsan_handle_builtin_unreachable(struct tu_unreachable_data *data) {
 
 void __ubsan_handle_invalid_builtin(struct tu_invalid_builtin_data *data) {
   tu_print_location("invalid builtin", data->location);
+}
+
+void __ubsan_handle_missing_return(struct tu_missing_return *data) {
+  tu_print_location("missing return", data->location);
 }
 
 #ifdef __cplusplus
