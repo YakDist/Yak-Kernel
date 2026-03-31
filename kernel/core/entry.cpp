@@ -1,6 +1,3 @@
-#include "yak/vm/alloc.h"
-#include "yak/vm/page.h"
-#include "yak/vm/pmm.h"
 #include <cstddef>
 #include <yak/arch.h>
 #include <yak/config.h>
@@ -10,6 +7,8 @@
 #include <yak/math.h>
 #include <yak/percpu.h>
 #include <yak/version.h>
+#include <yak/vm/page.h>
+#include <yak/vm/pmm.h>
 
 namespace yak {
 
@@ -45,8 +44,8 @@ extern "C" void kernel_entry() {
 #if CONFIG_BOOT_BANNER
   pr_info("%s", banner);
 #endif
-  pr_info("Booting Yak v" KERNEL_VERSION_STR " (commit: " KERNEL_GIT_HASH
-          ")\n");
+  pr_info("Booting Yak/" ARCH_STR " v" KERNEL_VERSION_STR
+          " (commit: " KERNEL_GIT_HASH ")\n");
 
   bsp_cpu_data.self = &bsp_cpu_data;
 

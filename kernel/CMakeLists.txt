@@ -52,6 +52,7 @@ target_include_directories(yak PRIVATE
 
 yak_defines(
 	__KERNEL__
+	ARCH_STR="${YAK_ARCH}"
 	${YAK_ARCH}
 )
 
