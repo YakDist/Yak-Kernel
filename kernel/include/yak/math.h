@@ -42,7 +42,7 @@ constexpr auto div_roundup(T1 a, T2 b) noexcept {
 
 template <auto Align, std::integral T>
   requires pow2<Align>
-constexpr T align_up(T addr) noexcept {
+constexpr auto align_up(T addr) noexcept {
   using U = std::make_unsigned_t<T>;
   return static_cast<T>((static_cast<U>(addr) + Align - 1) &
                         ~(static_cast<U>(Align) - 1));
@@ -50,9 +50,26 @@ constexpr T align_up(T addr) noexcept {
 
 template <auto Align, std::integral T>
   requires pow2<Align>
-constexpr T align_down(T addr) noexcept {
+constexpr auto align_down(T addr) noexcept {
   using U = std::make_unsigned_t<T>;
   return static_cast<T>(static_cast<U>(addr) & ~(static_cast<U>(Align) - 1));
+}
+
+template <std::integral T1, std::integral T2>
+[[gnu::const]]
+constexpr auto align_up(T1 addr, T2 align) noexcept {
+  using U =
+      std::common_type_t<std::make_unsigned_t<T1>, std::make_unsigned_t<T2>>;
+  return (static_cast<U>(addr) + static_cast<U>(align) - 1) &
+         ~(static_cast<U>(align) - 1);
+}
+
+template <std::integral T1, std::integral T2>
+[[gnu::const]]
+constexpr auto align_down(T1 addr, T2 align) noexcept {
+  using U =
+      std::common_type_t<std::make_unsigned_t<T1>, std::make_unsigned_t<T2>>;
+  return static_cast<U>(addr) & ~(static_cast<U>(align) - 1);
 }
 
 template <std::unsigned_integral T>

@@ -6,6 +6,7 @@
 #include <yak/arch-mm.h>
 #include <yak/log.h>
 #include <yak/vm/address.h>
+#include <yak/vm/memblock.h>
 #include <yak/vm/pmm.h>
 
 extern "C" {
@@ -42,6 +43,10 @@ LIMINE_REQ static volatile struct limine_paging_mode_request
 namespace yak::arch {
 size_t HHDM_BASE;
 size_t PMAP_LEVELS;
+
+[[gnu::weak]]
+void post_memblock() {}
+
 } // namespace yak::arch
 
 namespace yak::limine {
@@ -80,11 +85,20 @@ void mem_init() {
 
   for (size_t i = 0; i < memmap->entry_count; i++) {
     auto entry = memmap->entries[i];
-    if (entry->type != LIMINE_MEMMAP_USABLE)
-      continue;
-
-    pmm_add_region(entry->base, entry->base + entry->length);
+    if (entry->type == LIMINE_MEMMAP_USABLE) {
+      boot_memblock.usable.add(entry->base, entry->length, 0);
+    } else if (entry->type == LIMINE_MEMMAP_EXECUTABLE_AND_MODULES ||
+               entry->type == LIMINE_MEMMAP_RESERVED ||
+               entry->type == LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE ||
+               entry->type == LIMINE_MEMMAP_ACPI_RECLAIMABLE ||
+               entry->type == LIMINE_MEMMAP_ACPI_NVS) {
+      boot_memblock.reserved.add(entry->base, entry->length, 0);
+    }
   }
+
+  boot_memblock.coalesce_blocks();
+
+  arch::post_memblock();
 
   for (size_t i = 0; i < memmap->entry_count; i++) {
     auto entry = memmap->entries[i];

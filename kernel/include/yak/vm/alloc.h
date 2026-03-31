@@ -11,4 +11,7 @@ enum class PageUse {
   Reserved,
   Free,
 };
+
+constexpr int NUMA_LOCAL = -1;
+constexpr int NUMA_ANY = -2;
 } // namespace yak

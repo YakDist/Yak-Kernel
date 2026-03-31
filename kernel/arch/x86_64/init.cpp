@@ -1,14 +1,23 @@
+#define pr_fmt(fmt) "init: x86: " fmt
+
 #include <cstdint>
 #include <limine-generic/init.h>
+#include <uacpi/acpi.h>
+#include <uacpi/tables.h>
+#include <uacpi/uacpi.h>
 #include <x86_64/asm.h>
 #include <x86_64/control_regs.h>
 #include <x86_64/cpu_features.h>
 #include <x86_64/gdt.h>
 #include <x86_64/idt.h>
 #include <x86_64/msr.h>
+#include <yak/arch-mm.h>
 #include <yak/cpudata.h>
 #include <yak/init.h>
+#include <yak/log.h>
 #include <yak/panic.h>
+#include <yak/util.h>
+#include <yak/vm/memblock.h>
 
 namespace yak::arch {
 
@@ -122,5 +131,50 @@ void early_init() {
 }
 
 void mem_init() { limine::mem_init(); }
+
+static uacpi_iteration_decision check_srat(uacpi_handle user,
+                                           acpi_entry_hdr *hdr) {
+  switch (hdr->type) {
+  case ACPI_SRAT_ENTRY_TYPE_MEMORY_AFFINITY: {
+    auto ms = reinterpret_cast<acpi_srat_memory_affinity *>(hdr);
+    if (ms->flags & ACPI_SRAT_MEMORY_ENABLED) {
+      pr_debug(
+          "memory affinity: %#016lx - %#016lx (length: %lx) => domain %d\n",
+          ms->address, ms->address + ms->length, ms->length,
+          ms->proximity_domain);
+
+      boot_memblock.assign_node_to_range(ms->address, ms->length,
+                                         ms->proximity_domain);
+    }
+    break;
+  }
+  default:
+    break;
+  }
+  return UACPI_ITERATION_DECISION_CONTINUE;
+}
+
+void parse_numa() {
+  uacpi_table tbl;
+  if (uacpi_table_find_by_signature("SRAT", &tbl) != UACPI_STATUS_OK)
+    return;
+
+  uacpi_for_each_subtable(tbl.hdr, sizeof(acpi_srat), check_srat, nullptr);
+
+  boot_memblock.coalesce_blocks();
+
+  uacpi_table_unref(&tbl);
+}
+
+void post_memblock() {
+  auto buf = reinterpret_cast<void *>(
+      expect(boot_memblock.allocate_virtual(PAGE_SIZE, PAGE_SIZE, NUMA_ANY),
+             "could not allocate early table buffer"));
+  pr_debug("early table buffer: 0x%p\n", buf);
+
+  uacpi_setup_early_table_access(buf, PAGE_SIZE);
+
+  parse_numa();
+}
 
 } // namespace yak::arch
