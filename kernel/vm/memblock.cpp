@@ -14,11 +14,21 @@ namespace yak {
 Memblock boot_memblock = Memblock();
 
 void MemblockType::add(paddr_t base, size_t size, int nid) {
-  if (is_full()) {
-    pr_error("too many regions; can't add more\n");
-    return;
+  bool tried_coalesce = false;
+
+  while (true) {
+    if (is_full()) {
+      if (!tried_coalesce) {
+        coalesce();
+        tried_coalesce = true;
+        continue;
+      }
+      panic("too many regions; can't add more\n");
+    }
+
+    insert(find_insert_index(base), base, size, nid);
+    break;
   }
-  insert(find_insert_index(base), base, size, nid);
 }
 
 int MemblockType::find_insert_index(paddr_t base) const {
