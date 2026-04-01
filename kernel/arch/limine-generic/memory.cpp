@@ -62,6 +62,26 @@ void post_memblock() {}
 
 namespace yak::limine {
 
+struct KernelSection {
+  const char *name = nullptr;
+  vaddr_t start = 0;
+  vaddr_t end = 0;
+  VMProt prot = 0;
+};
+
+static const KernelSection kernel_sections[] = {
+    {"limine", reinterpret_cast<vaddr_t>(&__kernel_limine_start),
+     reinterpret_cast<vaddr_t>(&__kernel_limine_end), PROT_READ},
+
+    {"text", reinterpret_cast<vaddr_t>(&__kernel_text_start),
+     reinterpret_cast<vaddr_t>(&__kernel_text_end), PROT_READ | PROT_EXECUTE},
+
+    {"rodata", reinterpret_cast<vaddr_t>(&__kernel_rodata_start),
+     reinterpret_cast<vaddr_t>(&__kernel_rodata_end), PROT_READ},
+
+    {"data", reinterpret_cast<vaddr_t>(&__kernel_data_start),
+     reinterpret_cast<vaddr_t>(&__kernel_data_end), PROT_READ | PROT_WRITE}};
+
 void mem_init() {
   arch::HHDM_BASE = hhdm_request.response->offset;
 
@@ -130,27 +150,23 @@ void mem_init() {
                                      cache);
   }
 
-  // Map the kernel
-
   vaddr_t kernel_vbase = executable_address_request.response->virtual_base;
   paddr_t kernel_pbase = executable_address_request.response->physical_base;
 
-#define MAP_SECTION(SECTION, PROT)                                             \
-  vaddr_t SECTION##_start =                                                    \
-      align_down<arch::PAGE_SIZE>((vaddr_t)__kernel_##SECTION##_start);        \
-  vaddr_t SECTION##_end =                                                      \
-      align_up<arch::PAGE_SIZE>((vaddr_t)__kernel_##SECTION##_end);            \
-  pr_debug("remap kernel section " #SECTION ": %#016lx - %#016lx (" #PROT      \
-           ")\n",                                                              \
-           SECTION##_start, SECTION##_end);                                    \
-  kmap.page_map().enter_boot_large(                                            \
-      SECTION##_start - kernel_vbase + kernel_pbase, SECTION##_start,          \
-      SECTION##_end - SECTION##_start, PROT, CACHE_DEFAULT);
+  // Map all sections
+  for (const auto &sec : kernel_sections) {
+    vaddr_t start = align_down<arch::PAGE_SIZE>(sec.start);
+    vaddr_t end = align_up<arch::PAGE_SIZE>(sec.end);
 
-  MAP_SECTION(limine, PROT_READ);
-  MAP_SECTION(text, PROT_READ | PROT_EXECUTE);
-  MAP_SECTION(rodata, PROT_READ);
-  MAP_SECTION(data, PROT_READ | PROT_WRITE);
+    pr_debug("remap kernel section %s: %#016lx - %#016lx (%#x)\n", sec.name,
+             start, end, sec.prot);
+
+    kmap.page_map().enter_boot_large(
+        start - kernel_vbase + kernel_pbase, // physical address offset
+        start,                               // virtual address
+        end - start,                         // size
+        sec.prot, CACHE_DEFAULT);
+  }
 
   kmap.activate();
 }
