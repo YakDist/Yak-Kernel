@@ -14,3 +14,9 @@ local_setup: ## Setup local CMake build (With compile commands)
 		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
 		-DYAK_ARCH=x86_64 \
 		-DYAK_TOOLCHAIN=clang
+
+format: ## Run clang-format on every file under kernel/
+	find kernel -iname '*.h' \
+		-o -iname '*.c' \
+		-o -iname '*.cpp' \
+		| xargs clang-format -i

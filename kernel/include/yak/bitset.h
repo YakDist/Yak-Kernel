@@ -12,9 +12,13 @@ inline constexpr size_t BITSET_WORD_BITS = sizeof(bitset_word_t) * CHAR_BIT;
 
 namespace bitset_detail {
 
-constexpr size_t word_idx(size_t bit) { return bit / BITSET_WORD_BITS; }
+constexpr size_t word_idx(size_t bit) {
+  return bit / BITSET_WORD_BITS;
+}
 
-constexpr size_t bit_idx(size_t bit) { return bit & (BITSET_WORD_BITS - 1); }
+constexpr size_t bit_idx(size_t bit) {
+  return bit & (BITSET_WORD_BITS - 1);
+}
 
 constexpr bitset_word_t mask(size_t bit) {
   return bitset_word_t(1UL) << bit_idx(bit);

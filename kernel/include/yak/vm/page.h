@@ -20,13 +20,19 @@ struct [[gnu::aligned(64)]] Page {
   unsigned int order, block_order;
   frg::default_list_hook<Page> hook;
 
-  inline paddr_t to_pa() { return pfn << arch::PAGE_SHIFT; }
+  inline paddr_t to_pa() {
+    return pfn << arch::PAGE_SHIFT;
+  }
   inline vaddr_t to_va() {
     paddr_t pa = to_pa();
     return arch::p2v(pa);
   }
-  inline void *to_va_ptr() { return reinterpret_cast<void *>(to_va()); }
-  inline size_t block_size() { return 1ULL << (order + arch::PAGE_SHIFT); }
+  inline void *to_va_ptr() {
+    return reinterpret_cast<void *>(to_va());
+  }
+  inline size_t block_size() {
+    return 1ULL << (order + arch::PAGE_SHIFT);
+  }
 };
 
 static_assert(sizeof(Page) == 64);

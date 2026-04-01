@@ -16,14 +16,14 @@
 // first fallback: compiler intrinsics/attributes for assumptions
 #ifndef ASSUME
 #if defined(__clang__)
-#define ASSUME(...)                                                            \
-  do {                                                                         \
-    __builtin_assume(__VA_ARGS__);                                             \
+#define ASSUME(...)                \
+  do {                             \
+    __builtin_assume(__VA_ARGS__); \
   } while (0)
 #elif defined(_MSC_VER)
-#define ASSUME(...)                                                            \
-  do {                                                                         \
-    __assume(__VA_ARGS__);                                                     \
+#define ASSUME(...)        \
+  do {                     \
+    __assume(__VA_ARGS__); \
   } while (0)
 #elif defined(__GNUC__)
 #if __GNUC__ >= 13
@@ -32,19 +32,19 @@
 #endif
 #endif
 // second fallback: possibly evaluating uses of unreachable()
-#if !defined(ASSUME) &&                                                        \
+#if !defined(ASSUME) && \
     defined(DANGEROUS_BEHAVIOR_ASSUMPTIONS_ALLOWED_TO_EVALUATE)
 #if defined(__GNUC__)
-#define ASSUME(...)                                                            \
-  do {                                                                         \
-    if (!bool(__VA_ARGS__))                                                    \
-      __builtin_unreachable();                                                 \
+#define ASSUME(...)            \
+  do {                         \
+    if (!bool(__VA_ARGS__))    \
+      __builtin_unreachable(); \
   } while (0)
 #elif __cpp_lib_unreachable >= 202202L
 #include <utility>
-#define ASSUME(...)                                                            \
-  do {                                                                         \
-    if (!bool(__VA_ARGS__))                                                    \
+#define ASSUME(...)         \
+  do {                      \
+    if (!bool(__VA_ARGS__)) \
       ::std::unreachable(); ) while(0)
 #endif
 #endif

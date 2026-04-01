@@ -35,7 +35,9 @@ public:
     }
   }
 
-  void unlock() { locked.store(false, std::memory_order_release); }
+  void unlock() {
+    locked.store(false, std::memory_order_release);
+  }
 
 private:
   std::atomic<bool> locked;

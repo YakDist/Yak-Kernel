@@ -22,6 +22,8 @@ struct CpuData {
   void *kernel_stack_top;
 };
 
-static inline bool cpu_is_bsp() { return CPUDATA_LOAD(bsp); }
+static inline bool cpu_is_bsp() {
+  return CPUDATA_LOAD(bsp);
+}
 
 } // namespace yak

@@ -1,0 +1,14 @@
+---
+BasedOnStyle: LLVM
+#AlignAfterOpenBracket: DontAlign
+AlignConsecutiveMacros:
+  Enabled: true
+AlignEscapedNewlines: Left
+AllowShortBlocksOnASingleLine: Empty
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+#BinPackArguments: false
+#BinPackParameters: OnePerLine
+InsertNewlineAtEOF: true
+PackConstructorInitializers: CurrentLine
+SpaceAfterCStyleCast: true

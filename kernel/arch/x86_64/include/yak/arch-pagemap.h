@@ -34,16 +34,24 @@ struct X86_Paging {
                                           1ULL * 1024 * 1024 * 1024};
 
   static constexpr size_t MAX_LEVELS = 5;
-  static inline size_t levels() { return arch::PMAP_LEVELS; }
+  static inline size_t levels() {
+    return arch::PMAP_LEVELS;
+  }
 
-  static inline void activate(paddr_t top_level) { asm_wrcr3(top_level); }
+  static inline void activate(paddr_t top_level) {
+    asm_wrcr3(top_level);
+  }
 
-  static inline bool pte_is_zero(Pte pte) { return pte == 0; }
+  static inline bool pte_is_zero(Pte pte) {
+    return pte == 0;
+  }
   static inline bool pte_is_large(Pte pte, size_t level) {
     return level > 0 && (pte & ptePagesize) != 0;
   }
 
-  static inline uintptr_t pte_addr(Pte pte) { return pte & pteAddress; }
+  static inline uintptr_t pte_addr(Pte pte) {
+    return pte & pteAddress;
+  }
 
   static inline Pte make_dir(paddr_t pa) {
     return ptePresent | pteWrite | pteUser | pa;

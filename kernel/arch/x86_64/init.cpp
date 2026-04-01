@@ -31,11 +31,11 @@ static void setup_syscalls() {
   efer |= efer::SCE;
   asm_wrmsr(msr::EFER, efer);
 
-  asm_wrmsr(msr::LSTAR, (uintptr_t)syscall_entry);
+  asm_wrmsr(msr::LSTAR, (uintptr_t) syscall_entry);
 
   uint64_t star = asm_rdmsr(msr::STAR);
-  star |= ((uint64_t)GDT_SEL_USER_SYSCALL << 48);
-  star |= ((uint64_t)GDT_SEL_KERNEL_CODE << 32);
+  star |= ((uint64_t) GDT_SEL_USER_SYSCALL << 48);
+  star |= ((uint64_t) GDT_SEL_KERNEL_CODE << 32);
   asm_wrmsr(msr::STAR, star);
 }
 
@@ -149,7 +149,7 @@ void early_init() {
   // Setup GSBASE so that %gs:0 == the kernel ELF's PERCPU area
   //
   // kernel_entry() makes sure that cpudata->self already points to self
-  asm_wrmsr(msr::GSBASE, (uint64_t)__percpu_start);
+  asm_wrmsr(msr::GSBASE, (uint64_t) __percpu_start);
 
   detect_features(bsp_cpu_features);
 
@@ -158,7 +158,9 @@ void early_init() {
   setup_cpu();
 }
 
-void mem_init() { limine::mem_init(); }
+void mem_init() {
+  limine::mem_init();
+}
 
 static uacpi_iteration_decision check_srat([[maybe_unused]] uacpi_handle user,
                                            acpi_entry_hdr *hdr) {

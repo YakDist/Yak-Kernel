@@ -14,7 +14,9 @@ struct MemblockRegion {
   size_t size = 0;
   int node_id = -1;
 
-  paddr_t end() const { return base + size; }
+  paddr_t end() const {
+    return base + size;
+  }
 };
 
 struct MemblockType {
@@ -32,7 +34,9 @@ struct MemblockType {
     return {regions, static_cast<size_t>(count)};
   }
 
-  bool is_full() const { return count >= MEMBLOCK_MAX_REGIONS; }
+  bool is_full() const {
+    return count >= MEMBLOCK_MAX_REGIONS;
+  }
 
   void add(paddr_t base, size_t size, int nid);
 

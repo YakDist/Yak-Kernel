@@ -41,16 +41,22 @@ void *uacpi_kernel_alloc(uacpi_size size) {
   return nullptr;
 }
 
-void uacpi_kernel_free(void *mem) { panic("todo!"); }
+void uacpi_kernel_free(void *mem) {
+  panic("todo!");
+}
 
-void uacpi_kernel_free_mutex(uacpi_handle handle) { panic("todo!"); }
+void uacpi_kernel_free_mutex(uacpi_handle handle) {
+  panic("todo!");
+}
 
 uacpi_status uacpi_kernel_acquire_mutex(uacpi_handle handle,
                                         uacpi_u16 ms_timeout) {
   panic("todo!");
 }
 
-void uacpi_kernel_release_mutex(uacpi_handle handle) { panic("todo!"); }
+void uacpi_kernel_release_mutex(uacpi_handle handle) {
+  panic("todo!");
+}
 }
 
 } // namespace yak

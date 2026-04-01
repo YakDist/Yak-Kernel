@@ -8,7 +8,9 @@ public:
   void bootstrap_kernel();
   void activate();
 
-  inline PageMap &page_map() { return pm; }
+  inline PageMap &page_map() {
+    return pm;
+  }
 
 private:
   PageMap pm;

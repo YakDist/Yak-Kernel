@@ -1,13 +1,13 @@
 #define NANOPRINTF_IMPLEMENTATION
 #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 0
-#define NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_ALT_FORM_FLAG 1
-#define NANOPRINTF_VISIBILITY_STATIC 1
+#define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS   1
+#define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS       0
+#define NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS       1
+#define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS       1
+#define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS      1
+#define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS   1
+#define NANOPRINTF_USE_ALT_FORM_FLAG                 1
+#define NANOPRINTF_VISIBILITY_STATIC                 1
 #include <nanoprintf.h>
 
 #include <cstdarg>
@@ -39,7 +39,7 @@ static void printk_early(const char *fmt, va_list args) {
 
   if (written > 0) {
     size_t actual_len =
-        ((size_t)written >= remaining) ? (remaining - 1) : (size_t)written;
+        ((size_t) written >= remaining) ? (remaining - 1) : (size_t) written;
 
     early_puts(early_buf + early_buf_pos, actual_len);
 

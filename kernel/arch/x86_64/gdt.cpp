@@ -1,4 +1,3 @@
-#include "yak/log.h"
 #include <stdint.h>
 #include <x86_64/gdt.h>
 #include <yak/cpudata.h>
@@ -79,26 +78,27 @@ void gdt_reload() {
     uint64_t base;
   } gdtr = {
       .limit = sizeof(Gdt) - 1,
-      .base = (uint64_t)PERCPU_PTR(pcpu_gdt),
+      .base = (uint64_t) PERCPU_PTR(pcpu_gdt),
   };
 
-  asm volatile("lgdt (%0)\n\t"
-               // reload CS
-               "pushq %1\n\t"
-               "leaq 1f(%%rip), %%rax\n\t"
-               "pushq %%rax\n\t"
-               "lretq\n\t"
-               "1:\n\t"
-               // reload DS
-               "mov %2, %%ds\n\t"
-               "mov %2, %%es\n\t"
-               "mov %2, %%ss\n\t"
-               "xor %%eax, %%eax\n\t"
-               "mov %%ax, %%fs\n\t"
-               :
-               : "r"(&gdtr), "i"((uint16_t)GDT_SEL_KERNEL_CODE),
-                 "r"(GDT_SEL_KERNEL_DATA)
-               : "rax", "memory");
+  asm volatile( //
+      "lgdt (%0)\n\t"
+      // reload CS
+      "pushq %1\n\t"
+      "leaq 1f(%%rip), %%rax\n\t"
+      "pushq %%rax\n\t"
+      "lretq\n\t"
+      "1:\n\t"
+      // reload DS
+      "mov %2, %%ds\n\t"
+      "mov %2, %%es\n\t"
+      "mov %2, %%ss\n\t"
+      "xor %%eax, %%eax\n\t"
+      "mov %%ax, %%fs\n\t"
+      :
+      : "r"(&gdtr), "i"((uint16_t) GDT_SEL_KERNEL_CODE),
+        "r"(GDT_SEL_KERNEL_DATA)
+      : "rax", "memory");
 }
 
 } // namespace yak::arch

@@ -29,7 +29,8 @@ pid_t allocate_pid() {
 Process kernel_process = Process();
 
 Process::Process(Process *parent)
-    : state{ProcessState::PROCESS_ALIVE}, childlist{} {
+    : state{ProcessState::PROCESS_ALIVE},
+      childlist{} {
 
   pid = allocate_pid();
 

@@ -29,7 +29,11 @@ struct Node;
 struct Edge;
 struct Engine;
 
-enum class NodeType { none, stage, task };
+enum class NodeType {
+  none,
+  stage,
+  task
+};
 
 struct Edge {
   friend struct Node;
@@ -44,8 +48,12 @@ struct Edge {
 
   Edge &operator=(const Edge &) = delete;
 
-  Node *source() { return source_; }
-  Node *target() { return target_; }
+  Node *source() {
+    return source_;
+  }
+  Node *target() {
+    return target_;
+  }
 
 private:
   Node *source_;
@@ -61,7 +69,9 @@ struct Node {
   friend void realizeEdge(Edge *edge);
 
   Node(NodeType type, Engine *engine, const char *displayName = nullptr)
-      : type_{type}, engine_{engine}, displayName_{displayName} {
+      : type_{type},
+        engine_{engine},
+        displayName_{displayName} {
     realizeNode(this);
   }
 
@@ -69,10 +79,16 @@ struct Node {
 
   Node &operator=(const Node &) = delete;
 
-  NodeType type() { return type_; }
-  Engine *engine() { return engine_; }
+  NodeType type() {
+    return type_;
+  }
+  Engine *engine() {
+    return engine_;
+  }
 
-  const char *displayName() { return displayName_; }
+  const char *displayName() {
+    return displayName_;
+  }
 
 protected:
   virtual void activate() {};
@@ -113,12 +129,24 @@ struct Engine {
 protected:
   ~Engine() = default;
 
-  virtual void onRealizeNode(Node *node) { (void)node; };
-  virtual void onRealizeEdge(Edge *edge) { (void)edge; };
-  virtual void preActivate(Node *node) { (void)node; };
-  virtual void postActivate(Node *node) { (void)node; };
-  virtual void reportUnreached(Node *node) { (void)node; };
-  virtual void onUnreached() { __builtin_trap(); }
+  virtual void onRealizeNode(Node *node) {
+    (void) node;
+  };
+  virtual void onRealizeEdge(Edge *edge) {
+    (void) edge;
+  };
+  virtual void preActivate(Node *node) {
+    (void) node;
+  };
+  virtual void postActivate(Node *node) {
+    (void) node;
+  };
+  virtual void reportUnreached(Node *node) {
+    (void) node;
+  };
+  virtual void onUnreached() {
+    __builtin_trap();
+  }
 
 public:
   void run(Node *goal = nullptr) {
@@ -296,7 +324,9 @@ template <typename F, size_t NR = 0, size_t NE = 0> struct Task final : Node {
       : Task{engine, displayName, {}, e, std::move(invocable)} {}
 
 protected:
-  void activate() override { invocable_(); }
+  void activate() override {
+    invocable_();
+  }
 
 private:
   F invocable_;

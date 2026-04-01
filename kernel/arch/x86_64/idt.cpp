@@ -21,16 +21,18 @@ struct [[gnu::packed]] IdtEntry {
 };
 
 static void idt_make_entry(IdtEntry *entry, uint64_t isr) {
-  entry->isr_low = (uint16_t)(isr);
-  entry->isr_mid = (uint16_t)(isr >> 16);
-  entry->isr_high = (uint32_t)(isr >> 32);
+  entry->isr_low = (uint16_t) (isr);
+  entry->isr_mid = (uint16_t) (isr >> 16);
+  entry->isr_high = (uint32_t) (isr >> 32);
   entry->kernel_cs = GDT_SEL_KERNEL_CODE;
   entry->rsv = 0;
   entry->ist = 0;
   entry->attributes = 0x8E;
 }
 
-static void idt_set_ist(IdtEntry *entry, uint8_t ist) { entry->ist = ist; }
+static void idt_set_ist(IdtEntry *entry, uint8_t ist) {
+  entry->ist = ist;
+}
 
 [[gnu::aligned(16)]]
 static IdtEntry idt[256];
@@ -56,7 +58,7 @@ void idt_reload() {
   struct [[gnu::packed]] {
     uint16_t limit;
     uint64_t base;
-  } idtr = {.limit = sizeof(IdtEntry) * 256 - 1, .base = (uint64_t)&idt[0]};
+  } idtr = {.limit = sizeof(IdtEntry) * 256 - 1, .base = (uint64_t) &idt[0]};
 
   asm volatile("lidt %0" ::"m"(idtr) : "memory");
 }
@@ -88,11 +90,11 @@ struct [[gnu::packed]] Context {
   uint64_t ss;
 };
 
-#define ANSI_RESET "\033[0m"
-#define ANSI_GRAY "\033[90m"
-#define ANSI_CYAN "\033[36m"
-#define ANSI_YELLOW "\033[33m"
-#define ANSI_GREEN "\033[32m"
+#define ANSI_RESET   "\033[0m"
+#define ANSI_GRAY    "\033[90m"
+#define ANSI_CYAN    "\033[36m"
+#define ANSI_YELLOW  "\033[33m"
+#define ANSI_GREEN   "\033[32m"
 #define ANSI_MAGENTA "\033[35m"
 
 static void dump_context(const Context *ctx, bool irq) {

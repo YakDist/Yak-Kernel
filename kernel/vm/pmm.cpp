@@ -137,8 +137,7 @@ static Page *dom_alloc(Domain *dom, unsigned int desired_order) {
   }
 
   unsigned int order = desired_order;
-  while (++order < FREELIST_ORDERS && dom->free_list[order].empty()) {
-  }
+  while (++order < FREELIST_ORDERS && dom->free_list[order].empty()) {}
 
   if (order >= FREELIST_ORDERS) {
     return nullptr;

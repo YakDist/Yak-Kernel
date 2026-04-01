@@ -27,6 +27,6 @@ void __assert_fail(const char *assertion, const char *file, unsigned int line,
 
 #else
 
-#define assert(ignore) ((void)0)
+#define assert(ignore) ((void) 0)
 
 #endif

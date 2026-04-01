@@ -31,61 +31,63 @@ struct TrapFrame {
 
 [[gnu::noreturn]]
 void syscall_iret_return(TrapFrame *tf) {
-  asm volatile("cli\n\t"
-               "mov %0, %%rsp\n\t"
-               // restore GPRs
-               "pop %%rax\n\t"
-               "pop %%rbx\n\t"
-               "pop %%rcx\n\t"
-               "pop %%rdx\n\t"
-               "pop %%rdi\n\t"
-               "pop %%rsi\n\t"
-               "pop %%r8\n\t"
-               "pop %%r9\n\t"
-               "pop %%r10\n\t"
-               "pop %%r11\n\t"
-               "pop %%r12\n\t"
-               "pop %%r13\n\t"
-               "pop %%r14\n\t"
-               "pop %%r15\n\t"
-               "pop %%rbp\n\t"
+  asm volatile( //
+      "cli\n\t"
+      "mov %0, %%rsp\n\t"
+      // restore GPRs
+      "pop %%rax\n\t"
+      "pop %%rbx\n\t"
+      "pop %%rcx\n\t"
+      "pop %%rdx\n\t"
+      "pop %%rdi\n\t"
+      "pop %%rsi\n\t"
+      "pop %%r8\n\t"
+      "pop %%r9\n\t"
+      "pop %%r10\n\t"
+      "pop %%r11\n\t"
+      "pop %%r12\n\t"
+      "pop %%r13\n\t"
+      "pop %%r14\n\t"
+      "pop %%r15\n\t"
+      "pop %%rbp\n\t"
 
-               "swapgs\n\t"
-               "iretq\n\t"
-               //
-               ::"r"(tf)
-               : "memory");
+      "swapgs\n\t"
+      "iretq\n\t"
+      //
+      ::"r"(tf)
+      : "memory");
 
   __builtin_unreachable();
 }
 
 [[gnu::noreturn]]
 void syscall_sysret_return(TrapFrame *tf) {
-  asm volatile("cli\n\t"
-               "mov %0, %%rsp\n\t"
-               // restore GPRs
-               "pop %%rax\n\t"
-               "pop %%rbx\n\t"
-               "pop %%rcx\n\t" // will be overwritten below
-               "pop %%rdx\n\t"
-               "pop %%rdi\n\t"
-               "pop %%rsi\n\t"
-               "pop %%r8\n\t"
-               "pop %%r9\n\t"
-               "pop %%r10\n\t"
-               "pop %%r11\n\t" // will be overwritten below
-               "pop %%r12\n\t"
-               "pop %%r13\n\t"
-               "pop %%r14\n\t"
-               "pop %%r15\n\t"
-               "pop %%rbp\n\t"
-               // rsp now points at rip in the iretq frame
-               "mov (%%rsp), %%rcx\n\t"   // RIP
-               "mov 16(%%rsp), %%r11\n\t" // RFLAGS (skip CS at +8)
-               "mov 24(%%rsp), %%rsp\n\t" // user_rsp
-               "swapgs\n\t"
-               "sysretq\n\t" ::"r"(tf)
-               : "memory");
+  asm volatile( //
+      "cli\n\t"
+      "mov %0, %%rsp\n\t"
+      // restore GPRs
+      "pop %%rax\n\t"
+      "pop %%rbx\n\t"
+      "pop %%rcx\n\t" // will be overwritten below
+      "pop %%rdx\n\t"
+      "pop %%rdi\n\t"
+      "pop %%rsi\n\t"
+      "pop %%r8\n\t"
+      "pop %%r9\n\t"
+      "pop %%r10\n\t"
+      "pop %%r11\n\t" // will be overwritten below
+      "pop %%r12\n\t"
+      "pop %%r13\n\t"
+      "pop %%r14\n\t"
+      "pop %%r15\n\t"
+      "pop %%rbp\n\t"
+      // rsp now points at rip in the iretq frame
+      "mov (%%rsp), %%rcx\n\t"   // RIP
+      "mov 16(%%rsp), %%r11\n\t" // RFLAGS (skip CS at +8)
+      "mov 24(%%rsp), %%rsp\n\t" // user_rsp
+      "swapgs\n\t"
+      "sysretq\n\t" ::"r"(tf)
+      : "memory");
 
   __builtin_unreachable();
 }

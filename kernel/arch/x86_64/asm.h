@@ -33,15 +33,15 @@ static inline uint32_t asm_inl(uint32_t port) {
 }
 
 static inline void asm_wrmsr(uint32_t msr, uint64_t value) {
-  uint32_t low = (uint32_t)value;
-  uint32_t high = (uint32_t)(value >> 32);
+  uint32_t low = (uint32_t) value;
+  uint32_t high = (uint32_t) (value >> 32);
   asm volatile("wrmsr" ::"c"(msr), "a"(low), "d"(high) : "memory");
 }
 
 static inline uint64_t asm_rdmsr(uint32_t msr) {
   uint32_t low, high;
   asm volatile("rdmsr" : "=a"(low), "=d"(high) : "c"(msr) : "memory");
-  return ((uint64_t)high << 32) | (uint64_t)low;
+  return ((uint64_t) high << 32) | (uint64_t) low;
 }
 
 static inline void asm_cpuid(int leaf, int subleaf, uint32_t *eax,
@@ -51,14 +51,14 @@ static inline void asm_cpuid(int leaf, int subleaf, uint32_t *eax,
                : "a"(leaf), "c"(subleaf));
 }
 
-#define FN_CR(REG)                                                             \
-  static inline uint64_t asm_rdcr##REG() {                                     \
-    uint64_t data;                                                             \
-    asm volatile("mov %%cr" #REG ", %0" : "=r"(data));                         \
-    return data;                                                               \
-  }                                                                            \
-  static inline void asm_wrcr##REG(uint64_t val) {                             \
-    asm volatile("mov %0, %%cr" #REG ::"a"(val));                              \
+#define FN_CR(REG)                                     \
+  static inline uint64_t asm_rdcr##REG() {             \
+    uint64_t data;                                     \
+    asm volatile("mov %%cr" #REG ", %0" : "=r"(data)); \
+    return data;                                       \
+  }                                                    \
+  static inline void asm_wrcr##REG(uint64_t val) {     \
+    asm volatile("mov %0, %%cr" #REG ::"a"(val));      \
   }
 
 FN_CR(0);

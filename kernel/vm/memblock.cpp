@@ -175,7 +175,7 @@ std::optional<paddr_t> Memblock::allocate(size_t size, size_t align, int nid) {
   }
 
   if (auto addr = try_allocate(size, align, nid)) {
-    memset((void *)arch::p2v(*addr), 0, size);
+    memset((void *) arch::p2v(*addr), 0, size);
     return addr;
   }
 
