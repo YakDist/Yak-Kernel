@@ -14,19 +14,29 @@ SECTIONS
 {
 	. = 0xffffffff80000000;
 
+	PROVIDE_HIDDEN(__kernel_limine_start = .);
+
 	.limine_requests : {
 		KEEP(*(.limine_requests_start))
 		KEEP(*(.limine_requests))
 		KEEP(*(.limine_requests_end))
 	} :limine_requests
 
+	PROVIDE_HIDDEN(__kernel_limine_end = .);
+
 	. = ALIGN(4K);
+
+	PROVIDE_HIDDEN(__kernel_text_start = .);
 
 	.text : {
 		*(.text .text.*)
 	} :text
 
+	PROVIDE_HIDDEN(__kernel_text_end = .);
+
 	. = ALIGN(4K);
+
+	PROVIDE_HIDDEN(__kernel_rodata_start = .);
 
 	.rodata : {
 		*(.rodata .rodata.*)
@@ -55,7 +65,11 @@ SECTIONS
 		*(.eh_frame)
 	} :rodata
 
+	PROVIDE_HIDDEN(__kernel_rodata_end = .);
+
 	. = ALIGN(4K);
+
+	PROVIDE_HIDDEN(__kernel_data_start = .);
 
 	.data : {
 		*(.data .data.*)
@@ -77,6 +91,8 @@ SECTIONS
 		*(.bss .bss.*)
 		*(COMMON)
 	} :data
+
+	PROVIDE_HIDDEN(__kernel_data_end = .);
 
 	/DISCARD/ : {
 		*(.comment)

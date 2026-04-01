@@ -1,7 +1,10 @@
 #pragma once
 
+#include <cstdint>
+
 namespace yak::arch {
 struct CpuFeatures {
+  uint32_t max_leaf;
   bool nx;
   bool pdpe1gb;
   bool pge;
@@ -10,6 +13,7 @@ struct CpuFeatures {
   bool pse;
   bool xsave;
   bool avx;
+  bool x2apic;
 };
 
 extern CpuFeatures bsp_cpu_features;

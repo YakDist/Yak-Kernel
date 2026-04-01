@@ -10,6 +10,7 @@
 #include <x86_64/cpu_features.h>
 #include <x86_64/gdt.h>
 #include <x86_64/idt.h>
+#include <x86_64/lapic.h>
 #include <x86_64/msr.h>
 #include <yak/arch-mm.h>
 #include <yak/cpudata.h>
@@ -71,6 +72,25 @@ static void pat_init() {
 }
 // clang-format on
 
+uint32_t cpu_get_apic_id(void) {
+  uint32_t eax, ebx, ecx, edx;
+
+  if (bsp_cpu_features.max_leaf >= 0x1f) {
+    asm_cpuid(0x1f, 0, &eax, &ebx, &ecx, &edx);
+    if (ebx != 0)
+      return edx;
+  }
+
+  if (bsp_cpu_features.max_leaf >= 0x0b) {
+    asm_cpuid(0x0b, 0, &eax, &ebx, &ecx, &edx);
+    if (ebx != 0)
+      return edx;
+  }
+
+  asm_cpuid(1, 0, &eax, &ebx, &ecx, &edx);
+  return ebx >> 24;
+}
+
 static void setup_cpu() {
   idt_reload();
 
@@ -101,10 +121,17 @@ static void setup_cpu() {
     efer |= efer::NXE;
     asm_wrmsr(msr::EFER, efer);
   }
+
+  auto apic_id = cpu_get_apic_id();
+  CPUDATA_STORE(md.apic_id, apic_id);
 }
 
 static void detect_features(CpuFeatures &f) {
   uint32_t eax, ebx, ecx, edx;
+
+  asm_cpuid(0, 0, &eax, &ebx, &ecx, &edx);
+  f.max_leaf = eax;
+
   asm_cpuid(0x80000001, 0, &eax, &ebx, &ecx, &edx);
   f.nx = edx & (1 << 20);
   f.pdpe1gb = edx & (1 << 26);
@@ -115,6 +142,7 @@ static void detect_features(CpuFeatures &f) {
   f.pse = edx & (1 << 3);
   f.xsave = ecx & (1 << 26);
   f.avx = ecx & (1 << 28);
+  f.x2apic = ecx & (1 << 21);
 }
 
 void early_init() {
@@ -132,20 +160,51 @@ void early_init() {
 
 void mem_init() { limine::mem_init(); }
 
-static uacpi_iteration_decision check_srat(uacpi_handle user,
+static uacpi_iteration_decision check_srat([[maybe_unused]] uacpi_handle user,
                                            acpi_entry_hdr *hdr) {
   switch (hdr->type) {
+  case ACPI_SRAT_ENTRY_TYPE_PROCESSOR_AFFINITY: {
+    auto ps = reinterpret_cast<acpi_srat_processor_affinity *>(hdr);
+    if (!(ps->flags & ACPI_SRAT_PROCESSOR_ENABLED))
+      break;
+
+    uint32_t proximity_domain = ps->proximity_domain_low;
+    proximity_domain |= ps->proximity_domain_high[0] << 8;
+    proximity_domain |= ps->proximity_domain_high[1] << 16;
+    proximity_domain |= ps->proximity_domain_high[2] << 24;
+    pr_debug("APIC affinity: id=%u clock_domain=%u domain=%u\n", ps->id,
+             ps->clock_domain, proximity_domain);
+
+    if (ps->id == CPUDATA_LOAD(md.apic_id))
+      CPUDATA_STORE(affinity.memory_domain, proximity_domain);
+
+    break;
+  }
+  case ACPI_SRAT_ENTRY_TYPE_X2APIC_AFFINITY: {
+    auto ps = reinterpret_cast<acpi_srat_x2apic_affinity *>(hdr);
+    if (!(ps->flags & ACPI_SRAT_PROCESSOR_ENABLED))
+      break;
+
+    uint32_t proximity_domain = ps->proximity_domain;
+    pr_debug("x2APIC affinity: id=%u clock_domain=%u domain=%u\n", ps->id,
+             ps->clock_domain, proximity_domain);
+
+    if (ps->id == CPUDATA_LOAD(md.apic_id))
+      CPUDATA_STORE(affinity.memory_domain, proximity_domain);
+
+    break;
+  }
   case ACPI_SRAT_ENTRY_TYPE_MEMORY_AFFINITY: {
     auto ms = reinterpret_cast<acpi_srat_memory_affinity *>(hdr);
-    if (ms->flags & ACPI_SRAT_MEMORY_ENABLED) {
-      pr_debug(
-          "memory affinity: %#016lx - %#016lx (length: %lx) => domain %d\n",
-          ms->address, ms->address + ms->length, ms->length,
-          ms->proximity_domain);
+    if (!(ms->flags & ACPI_SRAT_PROCESSOR_ENABLED))
+      break;
 
-      boot_memblock.assign_node_to_range(ms->address, ms->length,
-                                         ms->proximity_domain);
-    }
+    pr_debug("memory affinity: %#016lx - %#016lx (length: %lx) => domain %d\n",
+             ms->address, ms->address + ms->length, ms->length,
+             ms->proximity_domain);
+
+    boot_memblock.assign_node_to_range(ms->address, ms->length,
+                                       ms->proximity_domain);
     break;
   }
   default:

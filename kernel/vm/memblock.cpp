@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <span>
+#include <string.h>
 #include <yak/arch-mm.h>
+#include <yak/cpudata.h>
 #include <yak/log.h>
 #include <yak/math.h>
 #include <yak/util.h>
@@ -159,12 +161,13 @@ std::optional<paddr_t> Memblock::try_allocate(size_t size, size_t align,
 
 std::optional<paddr_t> Memblock::allocate(size_t size, size_t align, int nid) {
   if (nid == NUMA_LOCAL) {
-    pr_warn("implement numa local memory id\n");
-    nid = 0;
+    nid = CPUDATA_LOAD(affinity.memory_domain);
   }
 
-  if (auto addr = try_allocate(size, align, nid))
+  if (auto addr = try_allocate(size, align, nid)) {
+    memset((void *)arch::p2v(*addr), 0, size);
     return addr;
+  }
 
   return std::nullopt;
 }

@@ -4,8 +4,12 @@
 #include <limine-generic/limine.h>
 #include <limine-generic/request.h>
 #include <yak/arch-mm.h>
+#include <yak/kernel-file.h>
 #include <yak/log.h>
+#include <yak/math.h>
 #include <yak/vm/address.h>
+#include <yak/vm/flags.h>
+#include <yak/vm/map.h>
 #include <yak/vm/memblock.h>
 #include <yak/vm/pmm.h>
 
@@ -37,6 +41,13 @@ LIMINE_REQ static volatile struct limine_paging_mode_request
         .max_mode = LIMINE_PAGING_MODE_RISCV_SV57,
         .min_mode = LIMINE_PAGING_MODE_RISCV_SV39,
 #endif
+};
+
+LIMINE_REQ static volatile struct limine_executable_address_request
+    executable_address_request = {
+        .id = LIMINE_EXECUTABLE_ADDRESS_REQUEST_ID,
+        .revision = 0,
+        .response = nullptr,
 };
 }
 
@@ -100,16 +111,48 @@ void mem_init() {
 
   arch::post_memblock();
 
+  kmap.bootstrap_kernel();
+
+  // Map the HHDM
   for (size_t i = 0; i < memmap->entry_count; i++) {
     auto entry = memmap->entries[i];
     if (entry->type == LIMINE_MEMMAP_BAD_MEMORY)
       continue;
 
-    paddr_t start = entry->base;
-    paddr_t end = start + entry->length;
+    VMCache cache = CACHE_DEFAULT;
+#ifdef x86_64
+    if (entry->type == LIMINE_MEMMAP_FRAMEBUFFER)
+      cache = arch::CACHE_WRITECOMBINE;
+#endif
 
-    // XXX: map to hhdm
+    kmap.page_map().enter_boot_large(entry->base, entry->base + arch::HHDM_BASE,
+                                     entry->length, PROT_READ | PROT_WRITE,
+                                     cache);
   }
+
+  // Map the kernel
+
+  vaddr_t kernel_vbase = executable_address_request.response->virtual_base;
+  paddr_t kernel_pbase = executable_address_request.response->physical_base;
+
+#define MAP_SECTION(SECTION, PROT)                                             \
+  vaddr_t SECTION##_start =                                                    \
+      align_down<arch::PAGE_SIZE>((vaddr_t)__kernel_##SECTION##_start);        \
+  vaddr_t SECTION##_end =                                                      \
+      align_up<arch::PAGE_SIZE>((vaddr_t)__kernel_##SECTION##_end);            \
+  pr_debug("remap kernel section " #SECTION ": %#016lx - %#016lx (" #PROT      \
+           ")\n",                                                              \
+           SECTION##_start, SECTION##_end);                                    \
+  kmap.page_map().enter_boot_large(                                            \
+      SECTION##_start - kernel_vbase + kernel_pbase, SECTION##_start,          \
+      SECTION##_end - SECTION##_start, PROT, CACHE_DEFAULT);
+
+  MAP_SECTION(limine, PROT_READ);
+  MAP_SECTION(text, PROT_READ | PROT_EXECUTE);
+  MAP_SECTION(rodata, PROT_READ);
+  MAP_SECTION(data, PROT_READ | PROT_WRITE);
+
+  kmap.activate();
 }
 
 } // namespace yak::limine

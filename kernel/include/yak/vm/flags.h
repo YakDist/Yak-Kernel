@@ -5,7 +5,9 @@
 
 namespace yak {
 
-enum VMProt : OptionBits {
+using VMProt = OptionBits;
+
+enum {
   PROT_NONE = 0,
   PROT_READ = 1 << 0,
   PROT_WRITE = 1 << 1,
@@ -13,9 +15,14 @@ enum VMProt : OptionBits {
   PROT_USER = 1 << 3,
 };
 
-using VMCache = arch::VMCache;
+using VMCache = OptionBits;
 
-enum AllocFlags : OptionBits {
+using arch::CACHE_DEFAULT;
+using arch::CACHE_DISABLE;
+
+using AllocFlags = OptionBits;
+
+enum {
   ALLOC_NOWAIT = 1 << 0, // must not sleep
   ALLOC_ZERO = 1 << 1,   // zero memory
 };
