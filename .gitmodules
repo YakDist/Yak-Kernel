@@ -1,3 +1,6 @@
 [submodule "vendor/uacpi"]
 	path = vendor/uacpi
 	url = https://github.com/uACPI/uACPI
+[submodule "vendor/limine-protocol"]
+	path = vendor/limine-protocol
+	url = https://codeberg.org/Limine/limine-protocol

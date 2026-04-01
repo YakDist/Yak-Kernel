@@ -1,5 +1,5 @@
-#include <limine-generic/limine.h>
 #include <limine-generic/request.h>
+#include <limine.h>
 
 extern "C" {
 [[gnu::used, gnu::section(".limine_requests_start")]]

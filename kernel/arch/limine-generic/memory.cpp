@@ -1,7 +1,7 @@
 #define pr_fmt(fmt) "limine: " fmt
 
 #include <cstddef>
-#include <limine-generic/limine.h>
+#include <limine.h>
 #include <limine-generic/request.h>
 #include <yak/arch-mm.h>
 #include <yak/kernel-file.h>
@@ -71,16 +71,17 @@ struct KernelSection {
 
 static const KernelSection kernel_sections[] = {
     {"limine", reinterpret_cast<vaddr_t>(&__kernel_limine_start),
-     reinterpret_cast<vaddr_t>(&__kernel_limine_end), PROT_READ},
+        reinterpret_cast<vaddr_t>(&__kernel_limine_end), PROT_READ},
 
     {"text", reinterpret_cast<vaddr_t>(&__kernel_text_start),
-     reinterpret_cast<vaddr_t>(&__kernel_text_end), PROT_READ | PROT_EXECUTE},
+        reinterpret_cast<vaddr_t>(&__kernel_text_end),
+        PROT_READ | PROT_EXECUTE},
 
     {"rodata", reinterpret_cast<vaddr_t>(&__kernel_rodata_start),
-     reinterpret_cast<vaddr_t>(&__kernel_rodata_end), PROT_READ},
+        reinterpret_cast<vaddr_t>(&__kernel_rodata_end), PROT_READ},
 
     {"data", reinterpret_cast<vaddr_t>(&__kernel_data_start),
-     reinterpret_cast<vaddr_t>(&__kernel_data_end), PROT_READ | PROT_WRITE}};
+        reinterpret_cast<vaddr_t>(&__kernel_data_end), PROT_READ | PROT_WRITE}};
 
 void mem_init() {
   arch::HHDM_BASE = hhdm_request.response->offset;
@@ -146,8 +147,7 @@ void mem_init() {
 #endif
 
     kmap.page_map().enter_boot_large(entry->base, entry->base + arch::HHDM_BASE,
-                                     entry->length, PROT_READ | PROT_WRITE,
-                                     cache);
+        entry->length, PROT_READ | PROT_WRITE, cache);
   }
 
   vaddr_t kernel_vbase = executable_address_request.response->virtual_base;
@@ -159,7 +159,7 @@ void mem_init() {
     vaddr_t end = align_up<arch::PAGE_SIZE>(sec.end);
 
     pr_debug("remap kernel section %s: %#016lx - %#016lx (%#x)\n", sec.name,
-             start, end, sec.prot);
+        start, end, sec.prot);
 
     kmap.page_map().enter_boot_large(
         start - kernel_vbase + kernel_pbase, // physical address offset

@@ -35,8 +35,8 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_ROOT}/cmake)
 
 set(AUTOCONF_H ${CMAKE_BINARY_DIR}/kconfig/include/generated/yak/config.h)
 
-include(kconfig)
+cmake_path(APPEND VENDOR_DIR "${CMAKE_SOURCE_DIR}" "vendor")
 
-include(vendor/uacpi/uacpi.cmake)
+include(kconfig)
 
 add_subdirectory(kernel)
