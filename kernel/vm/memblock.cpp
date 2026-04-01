@@ -34,21 +34,21 @@ void MemblockType::add(paddr_t base, size_t size, int nid) {
 int MemblockType::find_insert_index(paddr_t base) const {
   auto v = view();
   auto it = std::lower_bound(
-      v.begin(), v.end(), base,
+      v.cbegin(), v.cend(), base,
       [](const MemblockRegion &r, paddr_t b) { return r.base < b; });
-  return static_cast<int>(std::distance(v.begin(), it));
+  return static_cast<int>(std::distance(v.cbegin(), it));
 }
 
 std::optional<int> MemblockType::find_index(paddr_t pa, size_t size) const {
   auto v = view();
 
   auto it =
-      std::find_if(v.begin(), v.end(), [pa, size](const MemblockRegion &r) {
+      std::find_if(v.cbegin(), v.cend(), [pa, size](const MemblockRegion &r) {
         return r.base >= pa && r.end() <= pa + size;
       });
 
-  if (it != v.end()) {
-    int index = static_cast<int>(std::distance(v.begin(), it));
+  if (it != v.cend()) {
+    int index = static_cast<int>(std::distance(v.cbegin(), it));
     return index;
   }
 
