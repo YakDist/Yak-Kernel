@@ -14,6 +14,9 @@ extern char __kernel_rodata_end[];
 
 extern char __kernel_data_start[];
 extern char __kernel_data_end[];
+
+extern char __kernel_entry_stack_bottom[];
+extern char __kernel_entry_stack_top[];
 }
 
 } // namespace yak

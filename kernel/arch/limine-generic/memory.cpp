@@ -83,7 +83,12 @@ static const KernelSection kernel_sections[] = {
      reinterpret_cast<vaddr_t>(&__kernel_rodata_end), PROT_READ},
 
     {"data", reinterpret_cast<vaddr_t>(&__kernel_data_start),
-     reinterpret_cast<vaddr_t>(&__kernel_data_end), PROT_READ | PROT_WRITE}};
+     reinterpret_cast<vaddr_t>(&__kernel_data_end), PROT_READ | PROT_WRITE},
+
+    {"stack", reinterpret_cast<vaddr_t>(&__kernel_entry_stack_bottom),
+     reinterpret_cast<vaddr_t>(&__kernel_entry_stack_top),
+     PROT_READ | PROT_WRITE},
+};
 
 static void map_kernel() {
   auto res = ensure_request(executable_address_request,
@@ -279,14 +284,18 @@ static void map_hhdm(std::span<limine_memmap_entry *> memmap) {
   pr_info("mapped hhdm\n");
 }
 
+auto get_memmap() {
+  auto memmap_response =
+      ensure_request(memmap_request, "limine missing memmap");
+
+  return std::span(memmap_response.entries, memmap_response.entry_count);
+}
+
 void mem_init() {
   init_hhdm();
   init_paging_mode();
 
-  auto memmap_response =
-      ensure_request(memmap_request, "limine missing memmap");
-
-  auto memmap = std::span(memmap_response.entries, memmap_response.entry_count);
+  auto memmap = get_memmap();
 
   init_memblock(memmap);
 
@@ -300,6 +309,17 @@ void mem_init() {
   map_kernel();
 
   kmap.activate();
+}
+
+void mem_reclaim() {
+  auto memmap = get_memmap();
+  boot_memblock.coalesce_blocks();
+  boot_memblock.reserved.print();
+  for (auto entry : memmap) {
+    if (entry->type != LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE)
+      continue;
+    boot_memblock.free(entry->base, entry->length);
+  }
 }
 
 } // namespace yak::limine

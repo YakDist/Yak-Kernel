@@ -1,5 +1,6 @@
 .extern kernel_entry
 .extern __percpu_start
+.extern __kernel_entry_stack_top
 
 #include <yak/config.h>
 
@@ -9,6 +10,9 @@
 	.balign 16
 	.type exe_entry, @function
 exe_entry:
+	# Switch to our own stack
+	lea __kernel_entry_stack_top(%rip), %rsp	
+
 #if CONFIG_STACK_CANARIES
 	# First, setup kernel stack canary
 

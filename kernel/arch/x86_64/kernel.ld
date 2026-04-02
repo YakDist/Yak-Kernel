@@ -87,12 +87,22 @@ SECTIONS
 
 	. = ALIGN(4K);
 
-	.bss (NOLOAD) : ALIGN(4K) {
+	.bss (NOLOAD) : {
 		*(.bss .bss.*)
 		*(COMMON)
 	} :data
 
 	PROVIDE_HIDDEN(__kernel_data_end = .);
+
+	. = ALIGN(4K);
+
+	.stack (NOLOAD) : ALIGN(4K) {
+		PROVIDE_HIDDEN(__kernel_entry_stack_guard_bottom = .);
+		. += 4K;
+		PROVIDE_HIDDEN(__kernel_entry_stack_bottom = .);
+		. += 16K;
+		PROVIDE_HIDDEN(__kernel_entry_stack_top = .);
+	} :data
 
 	/DISCARD/ : {
 		*(.comment)
