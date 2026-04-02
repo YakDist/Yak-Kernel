@@ -48,6 +48,10 @@ void GenericPageMap<Traits>::enter_boot(vaddr_t va, paddr_t pa, VMProt prot,
   assert(ptep);
 
   Pte pte = ptep->load(std::memory_order_acquire);
+  if (!Traits::pte_is_zero(pte)) [[unlikely]] {
+    panic("try to overwrite mapping directly during boot phase!");
+  }
+
   Pte new_pte = Traits::make_leaf(pa, level, prot, cache);
   if (!ptep->compare_exchange_strong(pte, new_pte, std::memory_order_acquire,
                                      std::memory_order_relaxed)) {

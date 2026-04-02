@@ -27,10 +27,12 @@ struct Domain {
 
 constinit Domain g_domain;
 
-[[gnu::pure]]
+[[gnu::const]]
 static size_t pmm_block_size(unsigned int order) {
   return 1ULL << (arch::PAGE_SHIFT + order);
 }
+
+size_t usable_size = 0;
 
 void pmm_add_region(paddr_t base, paddr_t end) {
   assert(is_aligned_pow2(base, arch::PAGE_SIZE));
@@ -74,10 +76,12 @@ void pmm_add_region(paddr_t base, paddr_t end) {
     domain->free_list[max_order].push_back(block_page);
 
     block_base += block_size;
+    usable_size += block_size;
   }
 
   pr_info("add region: %#016lx - %#016lx (%ld pages)\n", base, end,
           npages_total);
+  pr_info("total usable size now at: %zuMiB\n", usable_size / 1024 / 1024);
 }
 
 static Page *dom_alloc(Domain *dom, unsigned int desired_order) {
