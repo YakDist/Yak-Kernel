@@ -110,7 +110,7 @@ static void map_kernel() {
   pr_info("mapped kernel\n");
 }
 
-constexpr size_t PFNDB_MIN_PAGE_SIZE = 0;
+constexpr size_t PFNDB_MIN_PAGE_SIZE = 1;
 
 // returns the end address
 template <typename Traits>
@@ -121,80 +121,74 @@ static vaddr_t map_pfndb_region(vaddr_t virt_base, size_t length, int nid) {
   vaddr_t addr = virt_base;
   vaddr_t end = virt_base + length;
 
+  auto select_level = [](vaddr_t addr, vaddr_t end) {
+    for (size_t i = std::size(Traits::PAGE_SIZES); i-- > PFNDB_MIN_PAGE_SIZE;) {
+      const size_t page_size = Traits::PAGE_SIZES[i];
+      if (is_aligned_pow2(addr, page_size) && addr + page_size <= end)
+        return i;
+    }
+    return PFNDB_MIN_PAGE_SIZE;
+  };
+
   while (addr < end) {
-    size_t chosen_level = PFNDB_MIN_PAGE_SIZE;
-    size_t chosen_size = Traits::PAGE_SIZES[PFNDB_MIN_PAGE_SIZE];
+    size_t level = select_level(addr, end);
+    size_t page_size = Traits::PAGE_SIZES[level];
 
-    if constexpr (std::size(Traits::PAGE_SIZES) > PFNDB_MIN_PAGE_SIZE) {
-      // prefer largest page sizes
-      for (size_t i = std::size(Traits::PAGE_SIZES);
-           i-- > PFNDB_MIN_PAGE_SIZE;) {
-        size_t page_size = Traits::PAGE_SIZES[i];
-
-        if (addr + page_size > end)
-          continue;
-
-        if (!is_aligned_pow2(addr, page_size))
-          continue;
-
-        chosen_level = i;
-        chosen_size = page_size;
-        break;
-      }
+    vaddr_t batch_end = end;
+    if (level + 1 < std::size(Traits::PAGE_SIZES)) {
+      size_t next_page_size = Traits::PAGE_SIZES[level + 1];
+      vaddr_t next_align = align_up(addr + 1, next_page_size);
+      batch_end = std::min(next_align, end);
     }
 
-    assert(is_aligned_pow2(addr, chosen_size));
+    assert(is_aligned_pow2(addr, page_size));
+    assert(is_aligned_pow2(batch_end, page_size) || batch_end == end);
 
-    // allocate backing on the same NUMA node
-    paddr_t pa = expect(boot_memblock.allocate(chosen_size, chosen_size, nid),
-                        "could not allocate backing pfndb memory");
+    while (addr < batch_end) {
+      // allocate backing on the same NUMA node
+      paddr_t pa = expect(boot_memblock.allocate(page_size, page_size, nid),
+                          "could not allocate backing pfndb memory");
 
-    kmap.page_map().enter_boot(addr, pa, PROT_READ | PROT_WRITE, CACHE_DEFAULT,
-                               chosen_level);
+      kmap.page_map().enter_boot(addr, pa, PROT_READ | PROT_WRITE,
+                                 CACHE_DEFAULT, level);
 
-    addr += chosen_size;
+      addr += page_size;
+    }
   }
 
   return end;
 }
 
+// Map the virtually contigoouns pfndb
 template <typename Traits> static void map_pfndb() {
-  // Map the virtually contigoouns pfndb
-  for (auto &entry : boot_memblock.memory.view()) {
-    pr_info("physical memory: %#016lx - %#016lx node id %d\n", entry.base,
-            entry.end(), entry.node_id);
-  }
+  constexpr size_t min_page_size = Traits::PAGE_SIZES[PFNDB_MIN_PAGE_SIZE];
 
   vaddr_t last_mapped_end = arch::PFNDB_BASE;
 
   for (auto &entry : boot_memblock.memory.view()) {
+    pr_info("physical memory: %#016lx - %#016lx node id %d\n", entry.base,
+            entry.end(), entry.node_id);
+
     size_t start_pfn = entry.base >> arch::PAGE_SHIFT;
     size_t end_pfn = entry.end() >> arch::PAGE_SHIFT;
 
-    vaddr_t raw_start = arch::PFNDB_BASE + start_pfn * sizeof(Page);
+    vaddr_t region_start =
+        align_down<min_page_size>(arch::PFNDB_BASE + start_pfn * sizeof(Page));
+    vaddr_t region_end =
+        align_up<min_page_size>(arch::PFNDB_BASE + end_pfn * sizeof(Page));
 
-    size_t raw_size = (end_pfn - start_pfn) * sizeof(Page);
+    // Only back the unmapped portion
+    vaddr_t map_start = std::max(region_start, last_mapped_end);
+    if (map_start >= region_end)
+      continue;
 
-    constexpr size_t page_size = Traits::PAGE_SIZES[PFNDB_MIN_PAGE_SIZE];
+    pr_info("map region from %lx to %lx for nid %d\n", map_start, region_end,
+            entry.node_id);
 
-    vaddr_t region_va = align_down<page_size>(raw_start);
-    size_t size = align_up<page_size>(raw_size);
+    size_t map_size = region_end - map_start;
 
-    // skip overlap
-    if (region_va < last_mapped_end) {
-      size_t overlap = last_mapped_end - region_va;
-
-      // fully backed already
-      if (overlap >= size)
-        continue;
-
-      region_va = last_mapped_end;
-      size -= overlap;
-    }
-
-    pr_info("map region from %lx to %lx for nid %d\n", region_va,
-            region_va + size, entry.node_id);
-    last_mapped_end = map_pfndb_region<Traits>(region_va, size, entry.node_id);
+    last_mapped_end =
+        map_pfndb_region<Traits>(map_start, map_size, entry.node_id);
   }
 
   pr_info("mapped pfndb\n");

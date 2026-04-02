@@ -36,9 +36,9 @@
 namespace yak {
 
 template <typename Traits> void GenericPageMap<Traits>::bootstrap_kernel() {
-  top_level = expect(
-      boot_memblock.allocate(arch::PAGE_SIZE, arch::PAGE_SIZE, NUMA_LOCAL),
-      "boot pagemap bootstrap oom");
+  top_level = expect(boot_memblock.allocate_zeroed(arch::PAGE_SIZE,
+                                                   arch::PAGE_SIZE, NUMA_LOCAL),
+                     "boot pagemap bootstrap oom");
 }
 
 template <typename Traits>
@@ -160,8 +160,8 @@ GenericPageMap<Traits>::fetch(vaddr_t va, size_t to_level, bool allocate,
       // TODO: alloc
       paddr_t pa;
       if (is_boot) {
-        pa = expect(boot_memblock.allocate(arch::PAGE_SIZE, arch::PAGE_SIZE,
-                                           NUMA_LOCAL),
+        pa = expect(boot_memblock.allocate_zeroed(arch::PAGE_SIZE,
+                                                  arch::PAGE_SIZE, NUMA_LOCAL),
                     "boot pagemap oom");
       } else {
         panic("not defined\n");

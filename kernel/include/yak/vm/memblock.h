@@ -48,7 +48,7 @@ struct MemblockType {
 
 private:
   int find_insert_index(paddr_t base) const;
-  std::optional<int> find_index(paddr_t base, size_t size) const;
+  std::optional<int> find_containing_index(paddr_t base, size_t size) const;
   void insert(int index, paddr_t base, size_t size, int nid);
   void remove(int index);
 };
@@ -69,6 +69,10 @@ struct Memblock {
 
   std::optional<paddr_t> allocate(size_t size, size_t align, int nid);
   std::optional<vaddr_t> allocate_virtual(size_t size, size_t align, int nid);
+
+  std::optional<paddr_t> allocate_zeroed(size_t size, size_t align, int nid);
+  std::optional<paddr_t> allocate_virtual_zeroed(size_t size, size_t align,
+                                                 int nid);
 
   void free(paddr_t pa, size_t size);
   void free_virtual(vaddr_t va, size_t size);

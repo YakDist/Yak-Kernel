@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <assert.h>
+#include <cstring>
 #include <span>
 #include <string.h>
 #include <yak/arch-mm.h>
@@ -41,12 +42,13 @@ int MemblockType::find_insert_index(paddr_t base) const {
   return static_cast<int>(std::distance(v.cbegin(), it));
 }
 
-std::optional<int> MemblockType::find_index(paddr_t pa, size_t size) const {
+std::optional<int> MemblockType::find_containing_index(paddr_t pa,
+                                                       size_t size) const {
   auto v = view();
 
   auto it =
-      std::find_if(v.cbegin(), v.cend(), [pa, size](const MemblockRegion &r) {
-        return r.base >= pa && r.end() <= pa + size;
+      std::find_if(v.cbegin(), v.cend(), [pa, size](const MemblockRegion &reg) {
+        return reg.base <= pa && reg.end() >= pa + size;
       });
 
   if (it != v.cend()) {
@@ -176,11 +178,19 @@ std::optional<paddr_t> Memblock::allocate(size_t size, size_t align, int nid) {
     nid = CPUDATA_LOAD(affinity.memory_domain);
   }
 
-  if (auto addr = try_allocate(size, align, nid)) {
-    memset((void *) arch::p2v(*addr), 0, size);
+  if (auto addr = try_allocate(size, align, nid))
+    return addr;
+
+  return std::nullopt;
+}
+
+std::optional<paddr_t> Memblock::allocate_zeroed(size_t size, size_t align,
+                                                 int nid) {
+  if (auto addr = allocate(size, align, nid)) {
+    void *ptr = reinterpret_cast<void *>(arch::p2v(*addr));
+    std::memset(ptr, 0, size);
     return addr;
   }
-
   return std::nullopt;
 }
 
@@ -189,9 +199,14 @@ std::optional<vaddr_t> Memblock::allocate_virtual(size_t size, size_t align,
   return allocate(size, align, nid).transform(arch::p2v);
 }
 
+std::optional<vaddr_t>
+Memblock::allocate_virtual_zeroed(size_t size, size_t align, int nid) {
+  return allocate_zeroed(size, align, nid).transform(arch::p2v);
+}
+
 void Memblock::free(paddr_t pa, size_t size) {
-  auto index =
-      expect(reserved.find_index(pa, size), "memblock free unreserved memory");
+  auto index = expect(reserved.find_containing_index(pa, size),
+                      "memblock free unreserved memory");
 
   // Create a copy: after remove() the original slot no longer contains our
   // region
