@@ -7,6 +7,7 @@
 #include <yak/math.h>
 #include <yak/percpu.h>
 #include <yak/version.h>
+#include <yak/vm/memblock.h>
 #include <yak/vm/page.h>
 #include <yak/vm/pmm.h>
 
@@ -54,6 +55,8 @@ extern "C" void kernel_entry() {
   run_init_array();
 
   arch::mem_init();
+
+  boot_memblock.done();
 
   // XXX: rather run this on the kmain thread!
   init_engine.run();

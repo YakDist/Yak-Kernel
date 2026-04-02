@@ -6,8 +6,10 @@
 
 namespace yak::arch {
 
-extern vaddr_t HHDM_BASE;
+extern vaddr_t HHDM_BASE; // changes depending on PML4/5
 extern size_t PMAP_LEVELS;
+
+constexpr vaddr_t PFNDB_BASE = 0xffffc00000000000; // -64TiB
 
 constexpr size_t PAGE_SIZE = 4096;
 constexpr unsigned int PAGE_SHIFT = 12;
@@ -26,6 +28,11 @@ enum {
 [[gnu::pure]]
 inline vaddr_t p2v(paddr_t pa) {
   return static_cast<vaddr_t>(HHDM_BASE + pa);
+}
+
+[[gnu::const]]
+inline size_t p2pfn(paddr_t pa) {
+  return pa >> PAGE_SHIFT;
 }
 
 [[gnu::pure]]

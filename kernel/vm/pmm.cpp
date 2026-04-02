@@ -1,10 +1,12 @@
 #define pr_fmt(fmt) "pmm: " fmt
 
+#include <algorithm>
 #include <assert.h>
 #include <cstddef>
 #include <frg/mutex.hpp>
 #include <string.h>
 #include <yak/arch-mm.h>
+#include <yak/arch-page.h>
 #include <yak/log.h>
 #include <yak/math.h>
 #include <yak/panic.h>
@@ -23,33 +25,11 @@ struct Domain {
   PageList free_list[FREELIST_ORDERS];
 };
 
-// TODO: Replace page lookup with a sparsely mapped page array
-struct Region {
-  size_t base;
-  size_t end;
-  frg::default_list_hook<Region> hook;
-  Page pages[];
-};
-
-using RegionList = frg::intrusive_list<
-    Region,
-    frg::locate_member<Region, frg::default_list_hook<Region>, &Region::hook>>;
-
-constinit RegionList region_list;
-
 constinit Domain g_domain;
 
 [[gnu::pure]]
 static size_t pmm_block_size(unsigned int order) {
   return 1ULL << (arch::PAGE_SHIFT + order);
-}
-
-Region *pmm_region_lookup(paddr_t base) {
-  for (auto reg : region_list) {
-    if (base >= reg->base && base < reg->end)
-      return reg;
-  }
-  return nullptr;
 }
 
 void pmm_add_region(paddr_t base, paddr_t end) {
@@ -61,30 +41,7 @@ void pmm_add_region(paddr_t base, paddr_t end) {
   size_t length = end - base;
   size_t npages_total = length >> arch::PAGE_SHIFT;
 
-  size_t used_size = sizeof(Region) + sizeof(Page) * npages_total;
-  size_t npages_used = div_roundup(used_size, arch::PAGE_SIZE);
-
-  Region *region = reinterpret_cast<Region *>(arch::p2v(base));
-  Page *pages = &region->pages[0];
-
-  // Zero the meta
-  memset(pages, 0, sizeof(Page) * npages_total);
-
-  size_t base_pfn = base >> arch::PAGE_SHIFT;
-  for (size_t i = 0; i < npages_used; i++) {
-    Page &page = pages[i];
-    page.usage = PageUse::Reserved;
-    page.pfn = base_pfn + i;
-    page.refcnt = 1;
-    page.order = page.block_order = 0;
-  }
-
-  // Discard very small regions
-  if (npages_used >= npages_total)
-    return;
-
-  for (size_t block_base = base + npages_used * arch::PAGE_SIZE;
-       block_base < end;) {
+  for (size_t block_base = base; block_base < end;) {
     unsigned int max_order = 0;
     while (max_order < FREELIST_ORDERS - 1) {
       unsigned int next = max_order + 1;
@@ -99,22 +56,19 @@ void pmm_add_region(paddr_t base, paddr_t end) {
 
     assert(block_base + block_size <= end);
     assert(is_aligned_pow2(block_base, block_size));
-    // clang-format off
-    assert(max_order == FREELIST_ORDERS - 1 
-	   || block_base + (block_size * 2) > end 
-	   || !is_aligned_pow2(block_base, block_size * 2));
-    // clang-format on
+    assert(max_order == FREELIST_ORDERS - 1 ||
+           block_base + (block_size * 2) > end ||
+           !is_aligned_pow2(block_base, block_size * 2));
 
-    size_t block_pfn = block_base >> arch::PAGE_SHIFT;
-    Page *block_page = &pages[block_pfn - base_pfn];
+    Page *block_page = &arch::p2page(block_base);
 
     for (size_t i = 0; i < block_pages; i++) {
-      Page *page = &block_page[i];
-      page->usage = PageUse::Free;
-      page->pfn = block_pfn + i;
-      page->refcnt = 0;
-      page->order = max_order;
-      page->block_order = max_order;
+      Page &page = block_page[i];
+      page.usage = PageUse::Free;
+      page.pfn = (block_base >> arch::PAGE_SHIFT) + i;
+      page.refcnt = 0;
+      page.order = max_order;
+      page.block_order = max_order;
     }
 
     domain->free_list[max_order].push_back(block_page);
@@ -122,8 +76,8 @@ void pmm_add_region(paddr_t base, paddr_t end) {
     block_base += block_size;
   }
 
-  pr_info("add region: %#016lx - %#016lx (%ld pages; %ld usable)\n", base, end,
-          npages_total, npages_total - npages_used);
+  pr_info("add region: %#016lx - %#016lx (%ld pages)\n", base, end,
+          npages_total);
 }
 
 static Page *dom_alloc(Domain *dom, unsigned int desired_order) {
@@ -166,8 +120,9 @@ static void dom_free(Domain *dom, Page *page) {
     paddr_t page_addr = page->to_pa();
     paddr_t buddy_addr = page_addr ^ block_size;
 
-    Page *buddy_page;
+    Page *buddy_page = &arch::p2page(buddy_addr);
 
+#if 0
     // The buddy page is either +block_size or -block_size away
     if (page_addr > buddy_addr) {
       auto delta = (page_addr - buddy_addr) >> arch::PAGE_SHIFT;
@@ -176,6 +131,7 @@ static void dom_free(Domain *dom, Page *page) {
       auto delta = (buddy_addr - page_addr) >> arch::PAGE_SHIFT;
       buddy_page = page + delta;
     }
+#endif
 
     // both pages must belong to the same initial block
     assert(buddy_page->block_order == page->block_order);
@@ -189,9 +145,7 @@ static void dom_free(Domain *dom, Page *page) {
     list.erase(list.iterator_to(buddy_page));
 
     // choose the lower half
-    if (buddy_page < page) {
-      page = buddy_page;
-    }
+    page = std::min(page, buddy_page);
 
     page->order += 1;
   }

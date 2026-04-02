@@ -222,8 +222,6 @@ void parse_numa() {
 
   uacpi_for_each_subtable(tbl.hdr, sizeof(acpi_srat), check_srat, nullptr);
 
-  boot_memblock.coalesce_blocks();
-
   uacpi_table_unref(&tbl);
 }
 

@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <assert.h>
 #include <span>
 #include <string.h>
 #include <yak/arch-mm.h>
@@ -8,6 +9,7 @@
 #include <yak/util.h>
 #include <yak/vm/flags.h>
 #include <yak/vm/memblock.h>
+#include <yak/vm/pmm.h>
 
 namespace yak {
 
@@ -211,8 +213,6 @@ void Memblock::free(paddr_t pa, size_t size) {
 
   // Add the free block back to usable memory
   usable.add(pa, size, r.node_id);
-
-  coalesce_blocks();
 }
 
 void Memblock::free_virtual(vaddr_t va, size_t size) {
@@ -222,6 +222,17 @@ void Memblock::free_virtual(vaddr_t va, size_t size) {
 void Memblock::assign_node_to_range(paddr_t base, size_t size, int nid) {
   usable.assign_node_to_range(base, size, nid);
   reserved.assign_node_to_range(base, size, nid);
+  memory.assign_node_to_range(base, size, nid);
+}
+
+void Memblock::done() {
+  static bool done_already = false;
+  assert(!done_already);
+  done_already = true;
+
+  for (auto &entry : usable.view()) {
+    pmm_add_region(entry.base, entry.end());
+  }
 }
 
 } // namespace yak

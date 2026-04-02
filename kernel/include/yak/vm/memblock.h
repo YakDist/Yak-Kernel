@@ -54,12 +54,17 @@ private:
 };
 
 struct Memblock {
+  // RAM safe for allocation
   MemblockType usable;
+  // RAM present, but mustn't be allocated
   MemblockType reserved;
+  // all physical RAM regions known to exist
+  MemblockType memory;
 
   inline void coalesce_blocks() {
     usable.coalesce();
     reserved.coalesce();
+    memory.coalesce();
   }
 
   std::optional<paddr_t> allocate(size_t size, size_t align, int nid);
@@ -69,6 +74,8 @@ struct Memblock {
   void free_virtual(vaddr_t va, size_t size);
 
   void assign_node_to_range(paddr_t base, size_t size, int nid);
+
+  void done();
 
 private:
   std::optional<paddr_t> allocate_from_region(const MemblockRegion &region,
