@@ -56,6 +56,8 @@ extern "C" void kernel_entry() {
 
   arch::mem_init();
 
+  arch::boot_finalize();
+
   boot_memblock.done();
 
   // XXX: rather run this on the kmain thread!

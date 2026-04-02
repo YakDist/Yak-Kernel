@@ -162,6 +162,10 @@ void mem_init() {
   limine::mem_init();
 }
 
+void boot_finalize() {
+  limine::mem_reclaim();
+}
+
 static uacpi_iteration_decision check_srat([[maybe_unused]] uacpi_handle user,
                                            acpi_entry_hdr *hdr) {
   switch (hdr->type) {
