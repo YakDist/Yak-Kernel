@@ -14,6 +14,7 @@ enum class PageUse {
 };
 
 struct [[gnu::aligned(64)]] Page {
+  unsigned int domain;
   PageUse usage;
   size_t pfn;
   size_t refcnt;

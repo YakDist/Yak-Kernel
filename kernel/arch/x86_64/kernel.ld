@@ -78,7 +78,7 @@ SECTIONS
 	/* Store the PERCPU area on a new page */
 	. = ALIGN(4K);
 
-	.percpu : {
+	.percpu (NOLOAD) : {
 		PROVIDE_HIDDEN(__percpu_start = .);
 		KEEP(*(.percpu.cpudata))
 		KEEP(*(.percpu .percpu.*))

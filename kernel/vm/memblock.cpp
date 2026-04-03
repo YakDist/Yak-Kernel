@@ -175,7 +175,7 @@ std::optional<paddr_t> Memblock::try_allocate(size_t size, size_t align,
 
 std::optional<paddr_t> Memblock::allocate(size_t size, size_t align, int nid) {
   if (nid == NUMA_LOCAL) {
-    nid = CPUDATA_LOAD(affinity.memory_domain);
+    nid = CPUDATA_LOAD(numa_domain);
   }
 
   if (auto addr = try_allocate(size, align, nid))

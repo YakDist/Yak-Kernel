@@ -16,9 +16,11 @@
 #include <yak/cpudata.h>
 #include <yak/init.h>
 #include <yak/log.h>
+#include <yak/numa.h>
 #include <yak/panic.h>
 #include <yak/util.h>
 #include <yak/vm/memblock.h>
+#include <yak/vm/pmm.h>
 
 namespace yak::arch {
 
@@ -149,6 +151,7 @@ void early_init() {
   // Setup GSBASE so that %gs:0 == the kernel ELF's PERCPU area
   //
   // kernel_entry() makes sure that cpudata->self already points to self
+  // no need to zero memory for the BSP. percpu is bss!
   asm_wrmsr(msr::GSBASE, (uint64_t) __percpu_start);
 
   detect_features(bsp_cpu_features);
@@ -181,8 +184,10 @@ static uacpi_iteration_decision check_srat([[maybe_unused]] uacpi_handle user,
     pr_debug("APIC affinity: id=%u clock_domain=%u domain=%u\n", ps->id,
              ps->clock_domain, proximity_domain);
 
+    auto logical_id = Domain::from_firmware_id(proximity_domain).id;
+
     if (ps->id == CPUDATA_LOAD(md.apic_id))
-      CPUDATA_STORE(affinity.memory_domain, proximity_domain);
+      CPUDATA_STORE(numa_domain, logical_id);
 
     break;
   }
@@ -195,8 +200,10 @@ static uacpi_iteration_decision check_srat([[maybe_unused]] uacpi_handle user,
     pr_debug("x2APIC affinity: id=%u clock_domain=%u domain=%u\n", ps->id,
              ps->clock_domain, proximity_domain);
 
+    auto logical_id = Domain::from_firmware_id(ps->proximity_domain).id;
+
     if (ps->id == CPUDATA_LOAD(md.apic_id))
-      CPUDATA_STORE(affinity.memory_domain, proximity_domain);
+      CPUDATA_STORE(numa_domain, logical_id);
 
     break;
   }
@@ -209,10 +216,17 @@ static uacpi_iteration_decision check_srat([[maybe_unused]] uacpi_handle user,
              ms->address, ms->address + ms->length, ms->length,
              ms->proximity_domain);
 
-    boot_memblock.assign_node_to_range(ms->address, ms->length,
-                                       ms->proximity_domain);
+    auto logical_id = Domain::from_firmware_id(ms->proximity_domain).id;
+
+    boot_memblock.assign_node_to_range(ms->address, ms->length, logical_id);
+
+    auto &aff = g_affinities.alloc_slot();
+    aff.domain = logical_id;
+    aff.base = ms->address;
+    aff.length = ms->length;
     break;
   }
+
   default:
     break;
   }

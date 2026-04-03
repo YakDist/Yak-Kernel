@@ -6,15 +6,11 @@
 
 namespace yak {
 
-struct Affinity {
-  int memory_domain;
-};
-
 struct CpuData {
   CpuData *self;
   arch::ArchCpuData md;
 
-  Affinity affinity;
+  unsigned int numa_domain;
 
   size_t id;
   bool bsp;

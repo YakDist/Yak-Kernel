@@ -4,6 +4,7 @@
 #define PERCPU_DECL  [[gnu::section(".percpu")]]
 
 extern char __percpu_start[];
+extern char __percpu_end[];
 
 #define PERCPU_OFFSET(sym) (((uintptr_t) &(sym)) - (uintptr_t) &__percpu_start)
 
@@ -67,6 +68,8 @@ extern char __percpu_start[];
   })
 
 #define PERCPU_BASE() ((uintptr_t) CPUDATA_LOAD(self))
+#define PERCPU_SIZE() \
+  ((size_t) ((uintptr_t) __percpu_start - (uintptr_t) __percpu_end))
 
 #define PERCPU_PTR(sym)                    \
   ({                                       \

@@ -4,4 +4,5 @@ yak_add_sources(
 	panic.cpp
 	sched.cpp
 	ps.cpp
+	numa.cpp
 )

@@ -7,8 +7,10 @@
 #include <string.h>
 #include <yak/arch-mm.h>
 #include <yak/arch-page.h>
+#include <yak/cpudata.h>
 #include <yak/log.h>
 #include <yak/math.h>
+#include <yak/numa.h>
 #include <yak/panic.h>
 #include <yak/spinlock.h>
 #include <yak/vm/address.h>
@@ -18,14 +20,7 @@
 
 namespace yak {
 
-#define FREELIST_ORDERS 10
-
-struct Domain {
-  IplSpinLock lock;
-  PageList free_list[FREELIST_ORDERS];
-};
-
-constinit Domain g_domain;
+auto g_affinities = FixedArena<Affinity, MAX_AFFINITIES>();
 
 [[gnu::const]]
 static size_t pmm_block_size(unsigned int order) {
@@ -34,11 +29,22 @@ static size_t pmm_block_size(unsigned int order) {
 
 size_t usable_size = 0;
 
+static Domain &domain_for_region(paddr_t base, paddr_t end) {
+  for (auto &aff : g_affinities.span()) {
+    if (aff.base >= base && end <= aff.end())
+      return Domain::from_id(aff.domain);
+  }
+
+  // fallback to first domain
+  return Domain::from_id(0);
+}
+
 void pmm_add_region(paddr_t base, paddr_t end) {
   assert(is_aligned_pow2(base, arch::PAGE_SIZE));
   assert(is_aligned_pow2(end, arch::PAGE_SIZE));
 
-  Domain *domain = &g_domain;
+  auto &domain = domain_for_region(base, end);
+  auto &mdom = domain.memory;
 
   size_t length = end - base;
   size_t npages_total = length >> arch::PAGE_SHIFT;
@@ -66,6 +72,7 @@ void pmm_add_region(paddr_t base, paddr_t end) {
 
     for (size_t i = 0; i < block_pages; i++) {
       Page &page = block_page[i];
+      page.domain = domain.id;
       page.usage = PageUse::Free;
       page.pfn = (block_base >> arch::PAGE_SHIFT) + i;
       page.refcnt = 0;
@@ -73,7 +80,7 @@ void pmm_add_region(paddr_t base, paddr_t end) {
       page.block_order = max_order;
     }
 
-    domain->free_list[max_order].push_back(block_page);
+    mdom.free_list[max_order].push_back(block_page);
 
     block_base += block_size;
     usable_size += block_size;
@@ -84,31 +91,31 @@ void pmm_add_region(paddr_t base, paddr_t end) {
   pr_info("total usable size now at: %zuMiB\n", usable_size / 1024 / 1024);
 }
 
-static Page *dom_alloc(Domain *dom, unsigned int desired_order) {
+Page *MemoryDomain::allocate(unsigned int desired_order) {
   assert(desired_order < FREELIST_ORDERS);
 
-  if (!dom->free_list[desired_order].empty()) {
-    Page *page = dom->free_list[desired_order].pop_front();
+  if (!free_list[desired_order].empty()) {
+    Page *page = free_list[desired_order].pop_front();
     assert(page->usage == PageUse::Free);
     page->refcnt = 1;
     return page;
   }
 
   unsigned int order = desired_order;
-  while (++order < FREELIST_ORDERS && dom->free_list[order].empty()) {}
+  while (++order < FREELIST_ORDERS && free_list[order].empty()) {}
 
   if (order >= FREELIST_ORDERS) {
     return nullptr;
   }
 
-  Page *page = dom->free_list[order].pop_front();
+  Page *page = free_list[order].pop_front();
   Page *buddy = page + (1 << order) / 2;
 
   while (order != desired_order) {
     order -= 1;
     buddy->order = order;
-    dom->free_list[order].push_back(buddy); // put upper half on free list
-    buddy = page + (1 << order) / 2;        // recalculate buddy for new order
+    free_list[order].push_back(buddy); // put upper half on free list
+    buddy = page + (1 << order) / 2;   // recalculate buddy for new order
   }
 
   assert(page->usage == PageUse::Free);
@@ -118,7 +125,7 @@ static Page *dom_alloc(Domain *dom, unsigned int desired_order) {
   return page;
 }
 
-static void dom_free(Domain *dom, Page *page) {
+void MemoryDomain::free(Page *page) {
   while (page->order < page->block_order) {
     auto block_size = pmm_block_size(page->order);
     paddr_t page_addr = page->to_pa();
@@ -145,7 +152,7 @@ static void dom_free(Domain *dom, Page *page) {
     if (buddy_page->order != page->order)
       break;
 
-    auto &list = dom->free_list[page->order];
+    auto &list = free_list[page->order];
     list.erase(list.iterator_to(buddy_page));
 
     // choose the lower half
@@ -155,13 +162,13 @@ static void dom_free(Domain *dom, Page *page) {
   }
 
   page->usage = PageUse::Free;
-  dom->free_list[page->order].push_front(page);
+  free_list[page->order].push_front(page);
 }
 
 Page *pmm_alloc(unsigned int order, PageUse use, OptionBits flags) {
-  auto dom = &g_domain;
+  auto *dom = &Domain::from_id(CPUDATA_LOAD(numa_domain)).memory;
   auto guard = frg::guard(&dom->lock);
-  auto page = dom_alloc(dom, order);
+  auto page = dom->allocate(order);
 
   if (!page) {
     panic("handle pmm OOM!");
@@ -177,12 +184,12 @@ Page *pmm_alloc(unsigned int order, PageUse use, OptionBits flags) {
 }
 
 void page_release(Page *page) {
-  auto dom = &g_domain;
-  auto guard = frg::guard(&dom->lock);
+  auto &dom = Domain::from_id(page->domain).memory;
+  auto guard = frg::guard(&dom.lock);
 
   if (page->refcnt-- == 1) {
     // NOTE: differentiate based on PageUse in the future
-    dom_free(dom, page);
+    dom.free(page);
   }
 }
 
