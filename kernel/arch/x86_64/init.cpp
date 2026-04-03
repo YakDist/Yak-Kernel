@@ -184,10 +184,10 @@ static uacpi_iteration_decision check_srat([[maybe_unused]] uacpi_handle user,
     pr_debug("APIC affinity: id=%u clock_domain=%u domain=%u\n", ps->id,
              ps->clock_domain, proximity_domain);
 
-    auto logical_id = Domain::from_firmware_id(proximity_domain).id;
+    auto &dom = Domain::from_firmware_id(proximity_domain);
 
     if (ps->id == CPUDATA_LOAD(md.apic_id))
-      CPUDATA_STORE(numa_domain, logical_id);
+      CPUDATA_STORE(numa_domain, dom.id);
 
     break;
   }
@@ -200,10 +200,10 @@ static uacpi_iteration_decision check_srat([[maybe_unused]] uacpi_handle user,
     pr_debug("x2APIC affinity: id=%u clock_domain=%u domain=%u\n", ps->id,
              ps->clock_domain, proximity_domain);
 
-    auto logical_id = Domain::from_firmware_id(ps->proximity_domain).id;
+    auto &dom = Domain::from_firmware_id(ps->proximity_domain);
 
     if (ps->id == CPUDATA_LOAD(md.apic_id))
-      CPUDATA_STORE(numa_domain, logical_id);
+      CPUDATA_STORE(numa_domain, dom.id);
 
     break;
   }
@@ -220,7 +220,7 @@ static uacpi_iteration_decision check_srat([[maybe_unused]] uacpi_handle user,
 
     boot_memblock.assign_node_to_range(ms->address, ms->length, logical_id);
 
-    auto &aff = g_affinities.alloc_slot();
+    auto &aff = pmm_affinities.alloc_slot();
     aff.domain = logical_id;
     aff.base = ms->address;
     aff.length = ms->length;

@@ -20,17 +20,15 @@
 
 namespace yak {
 
-auto g_affinities = FixedArena<Affinity, MAX_AFFINITIES>();
+auto pmm_affinities = FixedArena<Affinity, MAX_AFFINITIES>();
 
 [[gnu::const]]
 static size_t pmm_block_size(unsigned int order) {
   return 1ULL << (arch::PAGE_SHIFT + order);
 }
 
-size_t usable_size = 0;
-
 static Domain &domain_for_region(paddr_t base, paddr_t end) {
-  for (auto &aff : g_affinities.span()) {
+  for (auto &aff : pmm_affinities.span()) {
     if (aff.base >= base && end <= aff.end())
       return Domain::from_id(aff.domain);
   }
@@ -83,12 +81,10 @@ void pmm_add_region(paddr_t base, paddr_t end) {
     mdom.free_list[max_order].push_back(block_page);
 
     block_base += block_size;
-    usable_size += block_size;
   }
 
-  pr_info("add region: %#016lx - %#016lx (%ld pages)\n", base, end,
-          npages_total);
-  pr_info("total usable size now at: %zuMiB\n", usable_size / 1024 / 1024);
+  pr_info("add region (to #%u): %#016lx - %#016lx (%ld pages)\n", domain.id,
+          base, end, npages_total);
 }
 
 Page *MemoryDomain::allocate(unsigned int desired_order) {

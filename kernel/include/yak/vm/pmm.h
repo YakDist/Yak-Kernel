@@ -33,7 +33,7 @@ struct Affinity {
 
 // should be enough for everyone, if not, fuck your server
 static constexpr size_t MAX_AFFINITIES = 64;
-extern FixedArena<Affinity, MAX_AFFINITIES> g_affinities;
+extern FixedArena<Affinity, MAX_AFFINITIES> pmm_affinities;
 
 void pmm_add_region(paddr_t base, paddr_t end);
 

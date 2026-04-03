@@ -1,5 +1,6 @@
 #pragma once
 
+#include <yak/cpumask.h>
 #include <yak/vm/pmm.h>
 
 namespace yak {
@@ -7,6 +8,8 @@ namespace yak {
 struct Domain {
   unsigned int id = 0;
   unsigned int firmware_id = 0;
+
+  CpuMask cpus;
 
   MemoryDomain memory;
 

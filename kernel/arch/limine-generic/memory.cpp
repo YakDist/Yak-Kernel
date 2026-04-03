@@ -171,8 +171,8 @@ template <typename Traits> static void map_pfndb() {
   vaddr_t last_mapped_end = arch::PFNDB_BASE;
 
   for (auto &entry : boot_memblock.memory.view()) {
-    pr_info("physical memory: %#016lx - %#016lx node id %d\n", entry.base,
-            entry.end(), entry.node_id);
+    pr_debug("physical memory: %#016lx - %#016lx node id %d\n", entry.base,
+             entry.end(), entry.node_id);
 
     size_t start_pfn = entry.base >> arch::PAGE_SHIFT;
     size_t end_pfn = entry.end() >> arch::PAGE_SHIFT;
@@ -186,9 +186,6 @@ template <typename Traits> static void map_pfndb() {
     vaddr_t map_start = std::max(region_start, last_mapped_end);
     if (map_start >= region_end)
       continue;
-
-    pr_info("map region from %lx to %lx for nid %d\n", map_start, region_end,
-            entry.node_id);
 
     size_t map_size = region_end - map_start;
 
@@ -236,9 +233,6 @@ static void init_paging_mode() {
 
 static void init_memblock(std::span<limine_memmap_entry *> memmap) {
   for (auto entry : memmap) {
-    if (entry->type == LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE) {
-      pr_info("bootloader reclaimable:%zuMiB\n", (entry->length) / 1024 / 1024);
-    }
     switch (entry->type) {
     case LIMINE_MEMMAP_USABLE:
       boot_memblock.memory.add(entry->base, entry->length, 0);

@@ -63,7 +63,7 @@ extern "C" void kernel_entry() {
   // XXX: rather run this on the kmain thread!
   init_engine.run();
 
-  pr_debug("End Of Kernel reached!\n");
+  panic("End Of Kernel reached!\n");
 
   asm volatile("cli; hlt");
 }
