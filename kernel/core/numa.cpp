@@ -4,7 +4,7 @@ namespace yak {
 
 static int next_id = 0;
 
-auto g_domains = FixedArena<Domain, MAX_AFFINITIES>();
+static auto g_domains = FixedArena<Domain, MAX_AFFINITIES>();
 
 Domain &Domain::from_id(unsigned int id) {
   return g_domains[id];
