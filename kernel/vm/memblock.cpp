@@ -245,6 +245,8 @@ void Memblock::done() {
   assert(!done_already);
   done_already = true;
 
+  boot_memblock.coalesce_blocks();
+
   for (auto &entry : usable.view()) {
     pmm_add_region(entry.base, entry.end());
   }

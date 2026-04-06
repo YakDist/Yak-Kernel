@@ -1,3 +1,4 @@
+#include <string.h>
 #define pr_fmt(fmt) "limine: " fmt
 
 #include <assert.h>
@@ -240,6 +241,7 @@ static void init_memblock(std::span<limine_memmap_entry *> memmap) {
       break;
 
     case LIMINE_MEMMAP_RESERVED:
+    case LIMINE_MEMMAP_RESERVED_MAPPED:
     case LIMINE_MEMMAP_ACPI_RECLAIMABLE:
     case LIMINE_MEMMAP_ACPI_NVS:
     case LIMINE_MEMMAP_BAD_MEMORY:
@@ -250,7 +252,6 @@ static void init_memblock(std::span<limine_memmap_entry *> memmap) {
       break;
 
     case LIMINE_MEMMAP_FRAMEBUFFER:
-    case LIMINE_MEMMAP_RESERVED_MAPPED:
     default:
       boot_memblock.reserved.add(entry->base, entry->length, 0);
       break;
@@ -258,11 +259,37 @@ static void init_memblock(std::span<limine_memmap_entry *> memmap) {
   }
 }
 
+constexpr bool direct_map_4gib = false;
+constexpr size_t FOUR_GIB = 4ULL * 1024 * 1024 * 1024;
+
+// This *could* use the memblock,
+// however I'm not quite sure if that's the best option here
 static void map_hhdm(std::span<limine_memmap_entry *> memmap) {
-  // Map the HHDM
+  if constexpr (direct_map_4gib) {
+    // Map the first 4 GiB of memory regardless
+    kmap.page_map().enter_boot_large(0, arch::HHDM_BASE, FOUR_GIB,
+                                     PROT_READ | PROT_WRITE, CACHE_DEFAULT);
+  }
+
+  // Then map any other regions from memmap
   for (auto entry : memmap) {
+    if constexpr (direct_map_4gib) {
+      if (entry->base + entry->length <= FOUR_GIB)
+        continue;
+    }
+
     if (entry->type == LIMINE_MEMMAP_BAD_MEMORY)
       continue;
+
+    paddr_t base = entry->base;
+    size_t length = entry->length;
+
+    if constexpr (direct_map_4gib) {
+      if (entry->base < FOUR_GIB) {
+        length -= FOUR_GIB - entry->base;
+        base = FOUR_GIB;
+      }
+    }
 
     VMCache cache = CACHE_DEFAULT;
 #ifdef x86_64
@@ -270,9 +297,8 @@ static void map_hhdm(std::span<limine_memmap_entry *> memmap) {
       cache = arch::CACHE_WRITECOMBINE;
 #endif
 
-    kmap.page_map().enter_boot_large(entry->base, entry->base + arch::HHDM_BASE,
-                                     entry->length, PROT_READ | PROT_WRITE,
-                                     cache);
+    kmap.page_map().enter_boot_large(base, base + arch::HHDM_BASE, length,
+                                     PROT_READ | PROT_WRITE, cache);
   }
 
   pr_info("mapped hhdm\n");

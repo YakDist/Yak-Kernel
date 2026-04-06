@@ -39,6 +39,18 @@ template <typename Traits> void GenericPageMap<Traits>::bootstrap_kernel() {
   top_level = expect(boot_memblock.allocate_zeroed(arch::PAGE_SIZE,
                                                    arch::PAGE_SIZE, NUMA_LOCAL),
                      "boot pagemap bootstrap oom");
+
+  Pte *l1 = (Pte *) arch::p2v(top_level);
+
+  // The kernel L1 entries are precreated.
+  // They are shared amongst all maps.
+  auto l1_entries = Traits::LEVEL_ENTRIES[0];
+  for (size_t i = l1_entries / 2; i < l1_entries; i++) {
+    auto dir_pa = expect(boot_memblock.allocate_zeroed(
+                             arch::PAGE_SIZE, arch::PAGE_SIZE, NUMA_LOCAL),
+                         "boot pagemap l1 init oom");
+    l1[i] = Traits::make_dir(dir_pa);
+  }
 }
 
 template <typename Traits>
