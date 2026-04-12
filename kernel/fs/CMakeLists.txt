@@ -1,2 +1,6 @@
-yak_add_sources(tmpfs.c)
-yak_add_sources(devfs.c)
+yak_add_sources(
+	vfs.c
+	generic.c
+	tmpfs.c
+	devfs.c
+)

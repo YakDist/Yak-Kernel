@@ -1,22 +1,47 @@
+set(YAK_INCLUDE_LIMINE ON PARENT_SCOPE)
+set(YAK_INCLUDE_ACPI ON PARENT_SCOPE)
+
 yak_add_sources(
-	src/pmap.c
-	src/ipl.c
-	src/archctl.c
-	src/hpet.c
-	src/kvmclock.c
-	src/sched.c
-	src/pci.c
-	src/gdt.c
-	src/isr.c
-	src/apic.c
-	src/init.c
-	src/fpu.c
+	pmap.c
+	ipl.c
+	archctl.c
+	hpet.c
+	kvmclock.c
+	sched.c
+	pci.c
+	gdt.c
+	isr.c
+	apic.c
+	init.c
+	fpu.c
 
-	src/PlatformExpert.cc
+	PlatformExpert.cc
 
-	src/idt.S
-	src/sched.S
-	src/start.S
-	src/string.S
-	src/syscall.S
+	idt.S
+	sched.S
+	start.S
+	string.S
+	syscall.S
+)
+
+yak_compile_options(
+	-m64
+	-march=x86-64
+	$<$<CXX_COMPILER_ID:Clang>:-target x86_64-unknown-none-elf>
+	-mabi=sysv
+	-mno-red-zone
+	-mno-sse
+	-mno-sse2
+	-mno-mmx
+	-mno-80387
+	-mcmodel=kernel
+)
+
+yak_link_options(
+	-T${CMAKE_CURRENT_LIST_DIR}/linker.lds
+	-zmax-page-size=0x1000
+)
+
+yak_link_depends(
+	${CMAKE_CURRENT_LIST_DIR}/linker.lds
 )

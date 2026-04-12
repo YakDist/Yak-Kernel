@@ -22,9 +22,9 @@ class Object {
 		return false;
 	}
 
-	bool isKindOf(const ClassInfo *classInfo) const
+	bool isKindOf(const ClassInfo *clazz) const
 	{
-		return isKindOf(classInfo->className);
+		return isKindOf(clazz->className);
 	}
 
 	void retain()

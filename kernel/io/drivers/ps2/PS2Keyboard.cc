@@ -14,7 +14,7 @@
 #include <yio/Service.hh>
 #include <yio/pci/PciPersonality.hh>
 
-#include "../arch/x86_64/src/asm.h"
+#include <x86_64/asm.h>
 
 #define RINGBUF_SIZE 256
 

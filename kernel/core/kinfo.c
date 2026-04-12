@@ -47,7 +47,15 @@ static void kinfo_update_thread(void *)
 		bufwrite("%ld active threads, %ld online CPUs", -1UL,
 			 cpus_online());
 
-		flanterm_write_crnl(kinfo_flanterm_context, buf, len);
+		for (size_t i = 0; i < len; i++) {
+			if (buf[i] == '\n') {
+				const char *crnl = "\r\n";
+				flanterm_write(kinfo_flanterm_context, crnl, 2);
+			} else {
+				flanterm_write(kinfo_flanterm_context, &buf[i],
+					       1);
+			}
+		}
 
 		ksleep(STIME(1));
 

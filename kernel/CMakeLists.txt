@@ -1,89 +1,137 @@
-add_executable(kernel)
+add_executable(yak)
 
-add_custom_command(TARGET kernel POST_BUILD
-    COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:kernel> $<TARGET_FILE:kernel>.debug
-    COMMAND ${CMAKE_STRIP} --strip-debug --strip-unneeded $<TARGET_FILE:kernel>
-    COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=$<TARGET_FILE:kernel>.debug $<TARGET_FILE:kernel>
-    COMMENT "Generating debug file for kernel"
+include(symbols.cmake)
+include(build.cmake)
+
+find_package(PkgConfig REQUIRED)
+find_package(Git QUIET)
+
+add_custom_target(update_version_header ALL
+	COMMAND ${CMAKE_COMMAND}
+	-DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+	-DBINARY_DIR=${CMAKE_BINARY_DIR}
+	-DVERSION_STR=${PROJECT_VERSION}
+	-DVERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+	-DVERSION_MINOR=${PROJECT_VERSION_MINOR}
+	-DVERSION_PATCH=${PROJECT_VERSION_PATCH}
+	-P "${CMAKE_CURRENT_SOURCE_DIR}/get_git_hash.cmake"
+	BYPRODUCTS "${CMAKE_BINARY_DIR}/generated/include/yak/version.h"
 )
 
-add_custom_command(TARGET kernel POST_BUILD
-    COMMAND ${CMAKE_NM} $<TARGET_FILE:kernel>.debug > $<TARGET_FILE:kernel>.sym
-    COMMENT "Generating symbols file for kernel"
-)
+add_dependencies(yak update_version_header)
 
-option(KERNEL_LTO "enable lto" OFF)
+include(${VENDOR_DIR}/flanterm.cmake)
+include(${VENDOR_DIR}/nanoprintf.cmake)
+include(${VENDOR_DIR}/cc-runtime.cmake)
+include(${VENDOR_DIR}/pairing-heap.cmake)
+include(${VENDOR_DIR}/freestnd-c-hdrs.cmake)
+include(${VENDOR_DIR}/freestnd-cxx-hdrs.cmake)
 
-if (KERNEL_LTO)
-    set_property(TARGET kernel PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-endif()
-
-add_subdirectory(src)
-add_subdirectory(src-cpp)
-add_subdirectory(io)
+add_subdirectory(arch)
+add_subdirectory(lib)
+add_subdirectory(vm)
 add_subdirectory(fs)
 
-if (YAK_ARCH STREQUAL x86_64)
-    add_subdirectory(arch/generic-limine)
-endif()
-add_subdirectory(arch/${YAK_ARCH})
+add_subdirectory(core)
+add_subdirectory(core-cpp)
+add_subdirectory(io)
 
 yak_add_includes(
-    include
-    arch/${YAK_ARCH}/include
+	include
+	arch
+	arch/${YAK_ARCH}/include
 )
 
-target_compile_options(kernel PRIVATE
+target_include_directories(yak PRIVATE
+	# Contains version.h
+	${CMAKE_BINARY_DIR}/generated/include
+	# Contains config.h
+	${CMAKE_BINARY_DIR}/kconfig/include/generated
+)
+
+yak_defines(
+	__KERNEL__
+	ARCH_STR="${YAK_ARCH}"
+	${YAK_ARCH}
+)
+
+if (CONFIG_STACK_CANARIES)
+	yak_compile_options(
 	-fstack-protector-strong
 	-fstack-check
 	-mstack-protector-guard=global
+	)
+else()
+	yak_compile_options(-fno-stack-protector)
+endif()
+
+if (CONFIG_UBSAN)
+	yak_compile_options(
+		-fsanitize=undefined
+	)
+endif()
+
+if (CONFIG_LTO)
+	target_enable_lto(yak)
+endif()
+
+if (CONFIG_BUILD_TYPE_DEBUG)
+	yak_compile_options(-O0)
+elseif(CONFIG_BUILD_TYPE_RELEASE)
+	yak_compile_options(-O2)
+elseif(CONFIG_BUILD_TYPE_MINSIZEREL)
+	yak_compile_options(-Os)
+elseif(CONFIG_BUILD_TYPE_FASTFLAGSREL)
+	yak_compile_options(-O3)
+endif()
+
+yak_compile_options(
+	-ffile-prefix-map=${PROJECT_ROOT_NORMALIZED}=./
+	-fmacro-prefix-map=${PROJECT_ROOT_NORMALIZED}=./
 )
 
-target_compile_options(kernel PRIVATE
-	$<$<CONFIG:DEBUG>:-fsanitize=undefined>
+yak_compile_options(
+	-ffreestanding
+	-ggdb3
+	-nostdinc
+	-fno-omit-frame-pointer
+	-fno-strict-aliasing
+	-fno-semantic-interposition
+	-fvisibility=hidden
+	-fasynchronous-unwind-tables
+	-mgeneral-regs-only
+	-pipe
+	-fdata-sections
+	-ffunction-sections
+	-fno-pie
+	-fno-pic
+	-fno-plt
+	-Wall
+	-Wextra
+	-Wshadow
+	-Wimplicit-fallthrough
+	#-Wconversion
+	-Wnull-dereference
+	$<$<CXX_COMPILER_ID:Clang>:-Wthread-safety>
+	$<$<COMPILE_LANGUAGE:CXX>:-fno-threadsafe-statics>
+	$<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
+	$<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
+	$<$<COMPILE_LANGUAGE:CXX>:-fcheck-new>
+	$<$<COMPILE_LANGUAGE:CXX>:-fno-use-cxa-atexit>
+	$<$<CXX_COMPILER_ID:Clang>:-fstrict-vtable-pointers>
 )
 
-target_compile_options(kernel PRIVATE
-    #-finstrument-functions
+yak_link_options(
+	-nostdlib
+	--eh-frame-hdr
+	-gc-sections
 )
 
-target_compile_options(kernel PRIVATE
-     -fpie
-     -fno-pic
-     -mcmodel=kernel
-     -Wall
-     -Wextra
-)
-
-target_link_options(kernel
-    PRIVATE -T${CMAKE_CURRENT_LIST_DIR}/arch/x86_64/linker.lds
-    PRIVATE -static
-)
-
-target_compile_definitions(kernel 
+target_compile_definitions(yak
     PUBLIC
-	__KERNEL__
-	${YAK_ARCH}
-	ARCH_STR="${YAK_ARCH}"
-
-	CONFIG_KINFO=1
-	CONFIG_PROFILER=0
-	CONFIG_LAZY_IPL=1
-	CONFIG_SERIAL=1
-	CONFIG_SYSCALL_LOG=1
-	CONFIG_DEBUG=1
-	CONFIG_UBSAN=1
-
 	UACPI_NATIVE_ALLOC_ZEROED=1
 	FLANTERM_FB_DISABLE_BUMP_ALLOC=1
-    PRIVATE
-	__YAK_PRIVATE__
 )
 
-install(TARGETS kernel
-    RUNTIME DESTINATION share/yak
-)
-
-install(FILES ${CMAKE_BINARY_DIR}/kernel/kernel.sym
-    DESTINATION share/yak
-)
+install(TARGETS yak DESTINATION share/yak)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/yak.sym DESTINATION share/yak)

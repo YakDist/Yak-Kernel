@@ -1,31 +1,43 @@
 cmake_minimum_required(VERSION 3.26)
-set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/toolchains/Generic.cmake)
+
+set(YAK_ARCH "" CACHE STRING "Kernel architecture")
+set(BUILD_CONFIG "default" CACHE STRING "Build defconfig")
+
+if (NOT YAK_ARCH STREQUAL "x86_64")
+	message(FATAL_ERROR
+		"Unsupported architecture: ${YAK_ARCH}"
+	)
+endif()
+
+set(YAK_TOOLCHAIN "clang" CACHE STRING "Kernel toolchain")
+
+set(YAK_TOOLCHAIN_DIR "${CMAKE_SOURCE_DIR}/toolchain")
+include("${YAK_TOOLCHAIN_DIR}/toolchain_${YAK_TOOLCHAIN}.cmake")
 
 project(Yak
+    DESCRIPTION "Yet Another [unix] Kernel"
     VERSION 0.0.0
-    HOMEPAGE_URL https://github.com/lretq/yak-src
-    LANGUAGES C CXX ASM)
+    HOMEPAGE_URL https://github.com/YakDist/Yak-Kernel
+    LANGUAGES ${YAK_LANGUAGES}
+)
 
+# Handle optimization over kconfig
+set(CMAKE_BUILD_TYPE "None" CACHE STRING "" FORCE)
+
+# Require C23 & C++23
+set(CMAKE_C_STANDARD 23)
+set(CMAKE_C_STANDARD_REQUIRED True)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set(CMAKE_C_STANDARD 23)
-set(CMAKE_C_STANDARD_REQUIRED True)
+set(PROJECT_ROOT ${CMAKE_SOURCE_DIR})
+cmake_path(NORMAL_PATH PROJECT_ROOT OUTPUT_VARIABLE PROJECT_ROOT_NORMALIZED)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_ROOT}/cmake)
 
-set(YAK_SOURCES "")
-set(YAK_INCLUDES "")
+set(AUTOCONF_H ${CMAKE_BINARY_DIR}/kconfig/include/generated/yak/config.h)
 
-macro(yak_add_sources)
-    foreach(SOURCE_FILE ${ARGV})
-        target_sources(kernel PRIVATE "${CMAKE_CURRENT_LIST_DIR}/${SOURCE_FILE}")
-    endforeach()
-endmacro()
+cmake_path(APPEND VENDOR_DIR "${CMAKE_SOURCE_DIR}" "vendor")
 
-macro(yak_add_includes)
-    foreach(INC_DIR ${ARGV})
-        target_include_directories(kernel PRIVATE "${CMAKE_CURRENT_LIST_DIR}/${INC_DIR}")
-    endforeach()
-endmacro()
+include(kconfig)
 
 add_subdirectory(kernel)
-add_subdirectory(vendor)

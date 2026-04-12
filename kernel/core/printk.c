@@ -33,8 +33,16 @@ struct log_ctx {
 void console_print(struct console *console, void *private)
 {
 	struct log_ctx *log_ctx = private;
-	if (console->write)
-		console->write(console, log_ctx->msg, log_ctx->size);
+	if (console->write) {
+		for (size_t i = 0; i < log_ctx->size; i++) {
+			const char *crnl = "\r\n";
+			if (log_ctx->msg[i] == '\n') {
+				console->write(console, crnl, 2);
+			} else {
+				console->write(console, &log_ctx->msg[i], 1);
+			}
+		}
+	}
 }
 
 SPINLOCK(printk_lock);

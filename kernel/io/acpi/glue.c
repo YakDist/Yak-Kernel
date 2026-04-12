@@ -1,6 +1,8 @@
 #define pr_fmt(fmt) "uacpi: " fmt
 
 #include <stddef.h>
+#include <uacpi/uacpi.h>
+#include <yak/arch-cpu.h>
 #include <uacpi/status.h>
 #include <uacpi/types.h>
 #include <uacpi/kernel_api.h>
@@ -19,8 +21,7 @@
 #include <yak/sched.h>
 #include <yak/semaphore.h>
 #include <yio/pci.h>
-#include "uacpi/uacpi.h"
-#include "yak/vm/pmm.h"
+#include <yak/vm/pmm.h>
 #include <yak/init.h>
 
 extern paddr_t plat_get_rsdp();
@@ -74,7 +75,7 @@ void uacpi_kernel_io_unmap([[maybe_unused]] uacpi_handle handle)
 {
 }
 
-#include "../arch/x86_64/src/asm.h"
+#include <x86_64/asm.h>
 
 uacpi_status uacpi_kernel_io_read8(uacpi_handle handle, uacpi_size offset,
 				   uacpi_u8 *out_value)
@@ -429,6 +430,17 @@ uacpi_status uacpi_kernel_wait_for_work_completion(void)
 {
 	STUB();
 	return UACPI_STATUS_UNIMPLEMENTED;
+}
+
+uacpi_interrupt_state uacpi_kernel_disable_interrupts(void)
+{
+	return disable_interrupts();
+}
+
+void uacpi_kernel_restore_interrupts(uacpi_interrupt_state state)
+{
+	if (state)
+		enable_interrupts();
 }
 
 void setup_early_table()

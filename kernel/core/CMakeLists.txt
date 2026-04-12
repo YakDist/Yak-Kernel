@@ -1,9 +1,5 @@
-add_subdirectory(vm)
-add_subdirectory(rt)
-add_subdirectory(fs)
 add_subdirectory(irq)
 add_subdirectory(syscall)
-add_subdirectory(sched)
 
 yak_add_sources(
 	cpudata.c
@@ -31,4 +27,13 @@ yak_add_sources(
 	console.c
 	symbol.c
 	clocksource.c
+	launch.c
+	process.c
+	sched.c
+	thread.c
+	wait.c
 )
+
+if (CONFIG_BOOT_BANNER)
+	yak_add_sources(banner.c)
+endif ()

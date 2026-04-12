@@ -19,10 +19,6 @@
 
 #include <config.h>
 
-#define GET_ASCII_ART
-#include "art.h"
-#undef GET_ASCII_ART
-
 void init_bsp_cpudata();
 
 typedef void (*func_ptr)(void);
@@ -32,6 +28,18 @@ extern func_ptr __init_array_end[];
 INIT_STAGE(bsp_ready);
 INIT_STAGE(heap_ready);
 INIT_STAGE(aps_ready);
+
+#if CONFIG_BOOT_BANNER
+extern const char boot_banner[];
+void print_banner()
+{
+	kputs(boot_banner);
+}
+#else
+void print_banner()
+{
+}
+#endif
 
 void ipi_test(void *)
 {
@@ -137,7 +145,7 @@ void kstart()
 	}
 
 	// show the yak
-	kputs(bootup_ascii_txt);
+	print_banner();
 
 	pr_info("Yak-" ARCH_STR " v" VERSION_STRING " booting\n");
 

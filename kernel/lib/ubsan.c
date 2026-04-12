@@ -3,8 +3,6 @@
 #include <stdint.h>
 #include <yak/log.h>
 
-#if CONFIG_UBSAN
-
 struct tu_source_location {
 	const char *file;
 	uint32_t line;
@@ -181,6 +179,4 @@ void __ubsan_handle_invalid_builtin(struct tu_invalid_builtin_data *data)
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

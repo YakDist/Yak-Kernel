@@ -1,8 +1,0 @@
-include(freestnd-c-hdrs.cmake)
-include(freestnd-cxx-hdrs.cmake)
-include(nanoprintf.cmake)
-include(flanterm.cmake)
-include(limine-protocol.cmake)
-include(uacpi.cmake)
-include(pairing-heap.cmake)
-include(cc-runtime.cmake)

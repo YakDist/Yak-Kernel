@@ -173,6 +173,6 @@ INIT_NODE(fb_setup, limine_fb_setup);
 
 static size_t fb_write(struct console *console, const char *buf, size_t size)
 {
-	flanterm_write_crnl(console->private, buf, size);
+	flanterm_write(console->private, buf, size);
 	return size;
 }

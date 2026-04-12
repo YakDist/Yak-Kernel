@@ -3,3 +3,4 @@
 build
 qemulog.txt
 sysroot/
+*.xbstrap

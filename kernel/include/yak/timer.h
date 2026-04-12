@@ -6,6 +6,7 @@ extern "C" {
 
 #include <heap.h>
 #include <yak/spinlock.h>
+#include <yak/timespec.h>
 #include <yak/object.h>
 #include <yak/types.h>
 #include <yak/dpc.h>

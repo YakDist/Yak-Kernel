@@ -1,0 +1,50 @@
+orsource "arch/$ARCH/Kconfig"
+
+menu "Build options"
+	config LTO
+		bool "Enable LTO"
+		default n
+		help
+			Enable Link-time-optimization for the kernel
+
+	config STACK_CANARIES
+		bool "Enable Stack canaries"
+		default y
+		help
+			Enable the stack protector code
+
+	menu "Sanitizers"
+		config UBSAN
+			bool "Enable UBSAN"
+			default n
+			help
+				Enable the Undefined-Behaviour sanitizer
+	endmenu
+
+	config DEBUG
+		bool "Enable Debugging"
+		default y
+		help
+			Enable debug support
+
+	choice
+		prompt "Build type"
+		default BUILD_TYPE_DEBUG
+	
+	config BUILD_TYPE_DEBUG
+		bool "Debug"
+	
+	config BUILD_TYPE_RELEASE
+		bool "Release"
+	
+	config BUILD_TYPE_MINSIZEREL
+		bool "MinSizeRel"
+	
+	endchoice
+endmenu
+
+menu "General Options"
+	config BOOT_BANNER
+		bool "Print Boot Banner"
+		default y
+endmenu

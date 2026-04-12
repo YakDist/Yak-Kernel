@@ -5,6 +5,7 @@ extern "C" {
 #endif
 
 #include <yak/hint.h>
+#include <config.h>
 
 [[gnu::noreturn]]
 void __assert_fail(const char *assertion, const char *file, unsigned int line,

@@ -1,0 +1,26 @@
+
+#
+# Build options
+#
+# CONFIG_LTO is not set
+CONFIG_STACK_CANARIES=y
+
+#
+# Sanitizers
+#
+CONFIG_UBSAN=y
+# end of Sanitizers
+
+CONFIG_DEBUG=y
+CONFIG_BUILD_TYPE_DEBUG=y
+# CONFIG_BUILD_TYPE_RELEASE is not set
+# CONFIG_BUILD_TYPE_MINSIZEREL is not set
+# end of Build options
+
+#
+# General Options
+#
+CONFIG_BOOT_BANNER=y
+# end of General Options
+
+# CONFIG_TEST is not set
