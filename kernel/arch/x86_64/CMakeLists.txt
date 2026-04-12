@@ -11,6 +11,7 @@ yak_add_sources(
 	address_space.cpp
 	syscall.cpp
 	ipl.cpp
+	apic.cpp
 )
 
 yak_compile_options(

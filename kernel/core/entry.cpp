@@ -32,7 +32,7 @@ void run_init_array() {
 }
 
 #if CONFIG_BOOT_BANNER
-const char banner[] = {
+const char boot_banner[] = {
 #embed "banner.txt" if_empty()
 };
 #endif
@@ -41,9 +41,11 @@ namespace arch {
 bool is_canonical(uintptr_t addr);
 }
 
+extern void test_fn();
+
 extern "C" void kernel_entry() {
 #if CONFIG_BOOT_BANNER
-  pr_info("%s", banner);
+  pr_info("%s", boot_banner);
 #endif
   pr_info("Booting Yak/" ARCH_STR " v" KERNEL_VERSION_STR
           " (commit: " KERNEL_GIT_HASH ")\n");

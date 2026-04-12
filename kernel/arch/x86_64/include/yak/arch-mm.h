@@ -10,6 +10,12 @@ extern vaddr_t HHDM_BASE; // changes depending on PML4/5
 extern size_t PMAP_LEVELS;
 
 constexpr vaddr_t PFNDB_BASE = 0xffffc00000000000; // -64TiB
+constexpr size_t PFNDB_SIZE =
+    4ULL * 1024 * 1024 * 1024 * 1024; // 4TiB ought to be enough for anybody:
+                                      // 4TiB/64B*4096=describe 256TiB of memory
+
+constexpr vaddr_t KERNEL_WIRED_HEAP_BASE = 0xffffc40000000000; // -60TiB
+constexpr size_t KERNEL_WIRED_HEAP_SIZE = 4ULL * 1024 * 1024 * 1024 * 1024;
 
 constexpr size_t PAGE_SIZE = 4096;
 constexpr unsigned int PAGE_SHIFT = 12;

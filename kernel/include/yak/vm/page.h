@@ -11,6 +11,7 @@ enum class PageUse {
   null,
   Reserved,
   Free,
+  Wired,
 };
 
 struct [[gnu::aligned(64)]] Page {
@@ -34,6 +35,9 @@ struct [[gnu::aligned(64)]] Page {
   inline size_t block_size() {
     return 1ULL << (order + arch::PAGE_SHIFT);
   }
+
+  void retain();
+  void release();
 };
 
 static_assert(sizeof(Page) == 64);

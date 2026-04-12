@@ -3,6 +3,8 @@ yak_add_sources(
 	stack.cpp
 	assert.cpp
 	abort.cpp
+
+	vmem.cpp
 )
 
 if (CONFIG_UBSAN)

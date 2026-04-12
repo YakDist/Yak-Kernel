@@ -74,7 +74,7 @@ constexpr auto align_down(T1 addr, T2 align) noexcept {
 
 template <std::unsigned_integral T>
 [[gnu::const]]
-inline unsigned int ilog2(T x) noexcept {
+inline constexpr unsigned int ilog2(T x) noexcept {
   // undefined for 0
   return (sizeof(T) == 8) ? 64 - __builtin_clzll(x)
                           : 32 - __builtin_clz(static_cast<uint32_t>(x));
@@ -82,7 +82,7 @@ inline unsigned int ilog2(T x) noexcept {
 
 template <std::unsigned_integral T>
 [[gnu::const]]
-inline unsigned int next_ilog2(T x) noexcept {
+inline constexpr unsigned int next_ilog2(T x) noexcept {
   if (x <= 1)
     return 1;
   return ilog2(x - 1) + 1;

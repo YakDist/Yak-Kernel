@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <cstddef>
 #include <frg/mutex.hpp>
+#include <optional>
 #include <string.h>
 #include <yak/arch-mm.h>
 #include <yak/arch-page.h>
@@ -13,6 +14,7 @@
 #include <yak/numa.h>
 #include <yak/panic.h>
 #include <yak/spinlock.h>
+#include <yak/util.h>
 #include <yak/vm/address.h>
 #include <yak/vm/flags.h>
 #include <yak/vm/page.h>
@@ -87,7 +89,7 @@ void pmm_add_region(paddr_t base, paddr_t end) {
           base, end, npages_total);
 }
 
-Page *MemoryDomain::allocate(unsigned int desired_order) {
+std::optional<Page *> MemoryDomain::allocate(unsigned int desired_order) {
   assert(desired_order < FREELIST_ORDERS);
 
   if (!free_list[desired_order].empty()) {
@@ -101,7 +103,7 @@ Page *MemoryDomain::allocate(unsigned int desired_order) {
   while (++order < FREELIST_ORDERS && free_list[order].empty()) {}
 
   if (order >= FREELIST_ORDERS) {
-    return nullptr;
+    return std::nullopt;
   }
 
   Page *page = free_list[order].pop_front();
@@ -161,16 +163,15 @@ void MemoryDomain::free(Page *page) {
   free_list[page->order].push_front(page);
 }
 
-Page *pmm_alloc(unsigned int order, PageUse use, OptionBits flags) {
+std::optional<Page *> pmm_alloc(unsigned int order, PageUse use,
+                                OptionBits flags) {
   auto *dom = &Domain::from_id(CPUDATA_LOAD(numa_domain)).memory;
   auto guard = frg::guard(&dom->lock);
-  auto page = dom->allocate(order);
-
-  if (!page) {
-    panic("handle pmm OOM!");
-  }
+  auto page_res = dom->allocate(order);
+  auto page = expect(page_res, "handle pmm oom!");
 
   page->usage = use;
+  page->refcnt++;
 
   if (flags & ALLOC_ZERO) {
     memset(page->to_va_ptr(), 0, page->block_size());
@@ -179,13 +180,13 @@ Page *pmm_alloc(unsigned int order, PageUse use, OptionBits flags) {
   return page;
 }
 
-void page_release(Page *page) {
-  auto &dom = Domain::from_id(page->domain).memory;
+void Page::release() {
+  auto &dom = Domain::from_id(domain).memory;
   auto guard = frg::guard(&dom.lock);
 
-  if (page->refcnt-- == 1) {
+  if (refcnt-- == 1) {
     // NOTE: differentiate based on PageUse in the future
-    dom.free(page);
+    dom.free(this);
   }
 }
 

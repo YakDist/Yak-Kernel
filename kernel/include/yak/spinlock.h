@@ -13,15 +13,19 @@ namespace yak {
 #define busyloop_hint()
 #endif
 
-class SpinLock {
+class Spinlock {
 public:
-  constexpr SpinLock() : locked{false} {}
-  ~SpinLock() = default;
+  constexpr Spinlock() : locked{false} {}
+  ~Spinlock() = default;
 
-  SpinLock(const SpinLock &) = delete;
-  SpinLock &operator=(const SpinLock &) = delete;
-  SpinLock(SpinLock &&other) noexcept = delete;
-  SpinLock &operator=(SpinLock &&other) noexcept = delete;
+  Spinlock(const Spinlock &) = delete;
+  Spinlock &operator=(const Spinlock &) = delete;
+  Spinlock(Spinlock &&other) noexcept = delete;
+  Spinlock &operator=(Spinlock &&other) noexcept = delete;
+
+  bool is_locked() {
+    return locked.load(std::memory_order_acquire);
+  }
 
   bool try_lock() {
     bool expected = false;
@@ -43,18 +47,22 @@ private:
   std::atomic<bool> locked;
 };
 
-class IplSpinLock : SpinLock {
+class IplSpinlock : Spinlock {
 public:
-  constexpr IplSpinLock() : SpinLock(), prev_ipl(Ipl::passive) {}
+  constexpr IplSpinlock() : Spinlock(), prev_ipl(Ipl::passive) {}
 
-  IplSpinLock(const IplSpinLock &) = delete;
-  IplSpinLock &operator=(const IplSpinLock &) = delete;
-  IplSpinLock(IplSpinLock &&other) noexcept = delete;
-  IplSpinLock &operator=(IplSpinLock &&other) noexcept = delete;
+  IplSpinlock(const IplSpinlock &) = delete;
+  IplSpinlock &operator=(const IplSpinlock &) = delete;
+  IplSpinlock(IplSpinlock &&other) noexcept = delete;
+  IplSpinlock &operator=(IplSpinlock &&other) noexcept = delete;
+
+  bool is_locked() {
+    return Spinlock::is_locked();
+  }
 
   bool try_lock(Ipl at = Ipl::dispatch) {
     Ipl old = iplr(at);
-    bool result = SpinLock::try_lock();
+    bool result = Spinlock::try_lock();
     if (!result) {
       iplx(old);
     } else {
@@ -65,12 +73,12 @@ public:
 
   void lock(Ipl at = Ipl::dispatch) {
     Ipl old = iplr(at);
-    SpinLock::lock();
+    Spinlock::lock();
     this->prev_ipl = old;
   }
 
   void unlock() {
-    SpinLock::unlock();
+    Spinlock::unlock();
     iplx(prev_ipl);
   }
 
@@ -78,9 +86,9 @@ private:
   Ipl prev_ipl;
 };
 
-class InterruptSpinLock : SpinLock {
+class InterruptSpinLock : Spinlock {
 public:
-  constexpr InterruptSpinLock() : SpinLock(), prev_interrupts(false) {}
+  constexpr InterruptSpinLock() : Spinlock(), prev_interrupts(false) {}
   InterruptSpinLock(const InterruptSpinLock &) = delete;
   InterruptSpinLock &operator=(const InterruptSpinLock &) = delete;
   InterruptSpinLock(InterruptSpinLock &&) noexcept = delete;
@@ -89,7 +97,7 @@ public:
   bool try_lock() {
     bool old = arch::interrupt_state();
     arch::disable_interrupts();
-    bool result = SpinLock::try_lock();
+    bool result = Spinlock::try_lock();
     if (!result) {
       if (old)
         arch::enable_interrupts();
@@ -102,12 +110,12 @@ public:
   void lock() {
     bool old = arch::interrupt_state();
     arch::disable_interrupts();
-    SpinLock::lock();
+    Spinlock::lock();
     prev_interrupts = old;
   }
 
   void unlock() {
-    SpinLock::unlock();
+    Spinlock::unlock();
     if (prev_interrupts)
       arch::enable_interrupts();
   }

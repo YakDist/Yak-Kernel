@@ -1,23 +1,24 @@
 #pragma once
 
-#include <yak/spinlock.h>
+#include <cstddef>
+#include <optional>
 #include <yak/fixed_arena.h>
+#include <yak/math.h>
+#include <yak/spinlock.h>
 #include <yak/types.h>
 #include <yak/vm/address.h>
 #include <yak/vm/flags.h>
 #include <yak/vm/page.h>
-
-#define pmm_bytes_to_order(b) (next_ilog2((b)) - PAGE_SHIFT)
 
 namespace yak {
 
 #define FREELIST_ORDERS 10
 
 struct MemoryDomain {
-  IplSpinLock lock;
+  IplSpinlock lock;
   PageList free_list[FREELIST_ORDERS];
 
-  Page *allocate(unsigned int desired_order);
+  std::optional<Page *> allocate(unsigned int desired_order);
   void free(Page *page);
 };
 
@@ -35,10 +36,15 @@ struct Affinity {
 static constexpr size_t MAX_AFFINITIES = 64;
 extern FixedArena<Affinity, MAX_AFFINITIES> pmm_affinities;
 
+constexpr inline unsigned int pmm_size_to_order(size_t size) {
+  return next_ilog2(size) - arch::PAGE_SHIFT;
+}
+
 void pmm_add_region(paddr_t base, paddr_t end);
 
 [[nodiscard]]
-Page *pmm_alloc(unsigned int order, PageUse use, OptionBits alloc_flags);
+std::optional<Page *> pmm_alloc(unsigned int order, PageUse use,
+                                OptionBits alloc_flags);
 
 void page_release(Page *page);
 

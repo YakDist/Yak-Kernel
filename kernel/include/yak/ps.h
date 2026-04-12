@@ -1,8 +1,9 @@
 #pragma once
 
-#include "yak/spinlock.h"
 #include <frg/intrusive.hpp>
 #include <frg/list.hpp>
+#include <yak/spinlock.h>
+#include <yak/thread.h>
 
 namespace yak {
 
@@ -24,12 +25,16 @@ public:
 
   pid_t pid;
 
-  IplSpinLock childlist_lock;
+  IplSpinlock childlist_lock;
   frg::default_list_hook<Process> childlist_hook;
-  frg::intrusive_list<
+
+  using ProcessList = frg::intrusive_list<
       Process, frg::locate_member<Process, frg::default_list_hook<Process>,
-                                  &Process::childlist_hook>>
-      childlist;
+                                  &Process::childlist_hook>>;
+
+  ProcessList childlist;
+
+  ThreadList threads;
 };
 
 // kernel 'pseudo-process'
