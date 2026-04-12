@@ -63,10 +63,10 @@ void kmain(void *)
 	jobctl_setsid(proc1);
 
 	assert(proc1->pid == 1);
-	char *init_args[] = { "/sbin/init", NULL };
+	char *init_args[] = { "/bin/init", NULL };
 	char *init_envp[] = { NULL };
 	struct kthread *init_thrd;
-	EXPECT(launch_elf(proc1, proc1->map, "/sbin/init",
+	EXPECT(launch_elf(proc1, proc1->map, "/bin/init",
 			  SCHED_PRIO_TIME_SHARE, init_args, init_envp,
 			  &init_thrd));
 	sched_resume(init_thrd);
