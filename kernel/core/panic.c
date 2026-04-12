@@ -3,6 +3,7 @@
 #include <yak/arch-cpu.h>
 #include <yak/hint.h>
 #include <stdarg.h>
+#include <yak/config.h>
 
 #include <yak-private/profiler.h>
 

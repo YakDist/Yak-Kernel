@@ -1,8 +1,8 @@
-#include "yak/clocksource.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <yak/init.h>
 #include <yak/arch-context.h>
+#include <yak/clocksource.h>
 #include <yak/arch-cpu.h>
 #include <yak/cpudata.h>
 #include <yak/cpu.h>
@@ -15,6 +15,7 @@
 #include <yak/heap.h>
 #include <yak/vm/pmm.h>
 #include <yak/syscall.h>
+#include <yak/config.h>
 #include <uacpi/uacpi.h>
 #include <limine.h>
 
@@ -87,7 +88,7 @@ void tss_init();
 [[gnu::section(".percpu.cpudata"), gnu::used]]
 struct cpu percpu_cpudata = {};
 
-extern char __init_stack_top[];
+extern char __kernel_entry_stack_end[];
 
 void syscall_log(uintptr_t num, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3,
 		 uintptr_t arg4, uintptr_t arg5, uintptr_t arg6);
@@ -273,13 +274,21 @@ LIMINE_REQ struct limine_mp_request mp_request = {
 
 size_t num_cpus_total;
 
+void cpudata_md_init(struct cpu *cpu)
+{
+#if CONFIG_LAZY_IPL
+	cpu->md.hw_ipl = 0;
+	cpu->md.soft_ipl = 0;
+#endif
+}
+
 void init_bsp_cpudata()
 {
 	// we can just use the "normal" variables on the BSP for percpu access
 	wrmsr(MSR_GSBASE, (uintptr_t)__kernel_percpu_start);
 
 	// can pass the start of the .percpu.cpudata offset for the later inits
-	cpudata_init(&percpu_cpudata, (void *)__init_stack_top);
+	cpudata_init(&percpu_cpudata, (void *)__kernel_entry_stack_end);
 
 	// initialize the global idt instance
 	idt_init();

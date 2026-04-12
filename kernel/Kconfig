@@ -41,10 +41,24 @@ menu "Build options"
 		bool "MinSizeRel"
 	
 	endchoice
+	
+	config PROFILER
+		bool "Enable Profiler build"
+		default n
 endmenu
 
 menu "General Options"
 	config BOOT_BANNER
 		bool "Print Boot Banner"
 		default y
+
+	config KINFO
+		bool "Enable KINFO screen"
+		default y
+endmenu
+
+menu "Syscalls"
+	config SYSCALL_LOG
+		bool "Enable logging of all syscalls"
+		default n
 endmenu

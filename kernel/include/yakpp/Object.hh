@@ -64,7 +64,7 @@ class Object {
 			       nullptr;
 	}
 
-    private:
+    protected:
 	size_t refcnt_;
 };
 

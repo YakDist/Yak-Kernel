@@ -14,8 +14,9 @@ extern "C" {
 #include <yak/process.h>
 #include <yak/arch-sched.h>
 #include <yak/vm/map.h>
+#include <yak/config.h>
 
-#if CONFIG_PROFILER 
+#if CONFIG_PROFILER
 #include <yak-private/profiler.h>
 #endif
 

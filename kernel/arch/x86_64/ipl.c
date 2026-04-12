@@ -2,18 +2,19 @@
 #include <yak/softint.h>
 #include <yak/ipl.h>
 #include <yak/cpudata.h>
+#include <yak/config.h>
 
-#include "asm.h"
+#include <x86_64/asm.h>
 
 #if CONFIG_LAZY_IPL
 ipl_t curipl()
 {
-	return PERCPU_FIELD_LOAD(soft_ipl);
+	return PERCPU_FIELD_LOAD(md.soft_ipl);
 }
 
 ipl_t ripl(ipl_t ipl)
 {
-	return PERCPU_FIELD_XCHG(soft_ipl, ipl);
+	return PERCPU_FIELD_XCHG(md.soft_ipl, ipl);
 
 	/*
 	ipl_t old = curcpu()->soft_ipl;
@@ -24,9 +25,9 @@ ipl_t ripl(ipl_t ipl)
 
 void xipl(ipl_t ipl)
 {
-	PERCPU_FIELD_STORE(soft_ipl, ipl);
-	if (PERCPU_FIELD_LOAD(hw_ipl) > ipl) {
-		PERCPU_FIELD_STORE(hw_ipl, ipl);
+	PERCPU_FIELD_STORE(md.soft_ipl, ipl);
+	if (PERCPU_FIELD_LOAD(md.hw_ipl) > ipl) {
+		PERCPU_FIELD_STORE(md.hw_ipl, ipl);
 		write_cr8(ipl);
 	}
 	if (PERCPU_FIELD_LOAD(softint_pending) >> ipl) {

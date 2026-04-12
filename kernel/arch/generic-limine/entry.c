@@ -84,6 +84,9 @@ paddr_t plat_get_rsdp()
 size_t HHDM_BASE;
 size_t PMAP_LEVELS;
 
+extern char __kernel_entry_stack_start[];
+extern char __kernel_entry_stack_end[];
+
 void plat_mem_init()
 {
 	struct limine_memmap_response *res = memmap_request.response;
@@ -163,6 +166,7 @@ void plat_mem_init()
 	MAP_SECTION(text, VM_RX);
 	MAP_SECTION(rodata, VM_READ);
 	MAP_SECTION(data, VM_RW);
+	MAP_SECTION(entry_stack, VM_RW);
 
 #undef MAP_SECTION
 

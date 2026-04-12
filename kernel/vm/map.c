@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <assert.h>
+#include <yak/config.h>
 #include <yak/vm/map.h>
 #include <yak/vm/object.h>
 #include <yak/vm/aobj.h>

@@ -16,7 +16,7 @@
 #define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_SNPRINTF_SAFE_EMPTY_STRING_ON_OVERFLOW 1
 #include <nanoprintf.h>
 
@@ -33,16 +33,8 @@ struct log_ctx {
 void console_print(struct console *console, void *private)
 {
 	struct log_ctx *log_ctx = private;
-	if (console->write) {
-		for (size_t i = 0; i < log_ctx->size; i++) {
-			const char *crnl = "\r\n";
-			if (log_ctx->msg[i] == '\n') {
-				console->write(console, crnl, 2);
-			} else {
-				console->write(console, &log_ctx->msg[i], 1);
-			}
-		}
-	}
+	if (console->write)
+		console->write(console, log_ctx->msg, log_ctx->size);
 }
 
 SPINLOCK(printk_lock);

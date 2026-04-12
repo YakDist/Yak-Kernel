@@ -16,8 +16,8 @@
 #include <yak/timer.h>
 #include <yak/console.h>
 #include <yak/wait.h>
-
-#include <config.h>
+#include <yak/config.h>
+#include <yak/version.h>
 
 void init_bsp_cpudata();
 
@@ -147,7 +147,8 @@ void kstart()
 	// show the yak
 	print_banner();
 
-	pr_info("Yak-" ARCH_STR " v" VERSION_STRING " booting\n");
+	pr_info("running yak@" ARCH_STR " v" KERNEL_VERSION_STR
+		"/" KERNEL_GIT_HASH ", built on: " __DATE__ " " __TIME__ "\n");
 
 	// setup the kernel init machine
 	init_setup();

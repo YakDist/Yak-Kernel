@@ -8,7 +8,7 @@
 #include <yak/status.h>
 #include <yak/vm/pmm.h>
 
-#include "asm.h"
+#include <x86_64/asm.h>
 
 /*
  * References:
@@ -41,7 +41,7 @@ static int msr_kvm_system_time;
 static int msr_kvm_wall_clock;
 static volatile struct pvclock_vcpu_time_info *info = NULL;
 
-static int version;
+static int kvmclock_version;
 
 static bool kvmclock_probe()
 {
@@ -54,11 +54,11 @@ static bool kvmclock_probe()
 	asm_cpuid(0x40000001, 0, &a, &b, &c, &d);
 
 	if (a & (1 << 3)) {
-		version = 2;
+		kvmclock_version = 2;
 	} else if (a & (1 << 0)) {
-		version = 1;
+		kvmclock_version = 1;
 	} else {
-		version = -1;
+		kvmclock_version = -1;
 		return false;
 	}
 
@@ -67,10 +67,10 @@ static bool kvmclock_probe()
 
 static status_t kvmclock_setup(struct clocksource *)
 {
-	if (version == 2) {
+	if (kvmclock_version == 2) {
 		msr_kvm_system_time = MSR_KVM_SYSTEM_TIME_NEW;
 		msr_kvm_wall_clock = MSR_KVM_WALL_CLOCK_NEW;
-	} else if (version == 1) {
+	} else if (kvmclock_version == 1) {
 		msr_kvm_system_time = MSR_KVM_SYSTEM_TIME;
 		msr_kvm_wall_clock = MSR_KVM_WALL_CLOCK;
 	} else {

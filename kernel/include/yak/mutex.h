@@ -10,6 +10,7 @@ extern "C" {
 #include <yak/wait.h>
 #include <yak/kevent.h>
 #include <yak/cleanup.h>
+#include <yak/config.h>
 
 struct kmutex {
 	struct kevent event;

@@ -4,6 +4,7 @@
 #include <yak/vm/pmm.h>
 #include <yak/cpu.h>
 #include <yak/init.h>
+#include <yak/config.h>
 
 extern size_t n_pagefaults;
 extern size_t n_shootdowns;

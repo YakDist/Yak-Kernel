@@ -12,6 +12,7 @@
 #include <yak/arch-mm.h>
 #include <yak/vm/page.h>
 #include <yak/vm.h>
+#include <yak/config.h>
 
 #define BLOCK_SIZE(order) (1ULL << (PAGE_SHIFT + order))
 

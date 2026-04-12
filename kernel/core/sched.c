@@ -42,6 +42,7 @@ See: https://github.com/xrarch/mintia2
 #include <yak/arch-cpudata.h>
 #include <yak/timer.h>
 #include <yak/panic.h>
+#include <yak/config.h>
 
 static struct kevent reaper_ev;
 static SPINLOCK(reaper_lock);

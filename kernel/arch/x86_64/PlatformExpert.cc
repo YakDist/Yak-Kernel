@@ -91,6 +91,11 @@ struct IOApic : public Service {
 		write(IOAPIC_REDTBL_BASE + gsi * 2 + 1, (uint32_t)(val >> 32));
 	}
 
+	virtual void deinit() override
+	{
+		pr_warn("deinit ioapic?\n");
+	}
+
     private:
 	inline void write(uint8_t offset, uint32_t value)
 	{
@@ -148,6 +153,7 @@ struct CpuNamespace : public Service {
 
 		auto ioapic = IO_OBJ_CREATE(IOApic);
 		ioapic->initWithArgs(ent->id, ent->gsi_base, ent->address);
+		pr_warn("ioapic base: %p, size: %lx\n", ioapic, sizeof(IOApic));
 
 		ioapics[ioapic_count++] = ioapic;
 		provider->attachChildAndUnref(ioapic);

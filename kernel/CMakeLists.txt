@@ -109,8 +109,6 @@ yak_compile_options(
 	-Wall
 	-Wextra
 	-Wshadow
-	-Wimplicit-fallthrough
-	#-Wconversion
 	-Wnull-dereference
 	$<$<CXX_COMPILER_ID:Clang>:-Wthread-safety>
 	$<$<COMPILE_LANGUAGE:CXX>:-fno-threadsafe-statics>

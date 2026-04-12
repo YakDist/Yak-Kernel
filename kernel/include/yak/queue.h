@@ -38,6 +38,7 @@
 
 #include <stddef.h>
 #include <assert.h>
+#include <yak/config.h>
 
 /*
  * This file defines five types of data structures: singly-linked lists,

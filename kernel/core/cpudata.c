@@ -37,11 +37,15 @@ struct cpu **__all_cpus = NULL;
 
 static size_t next_cpu_id = 0;
 
+extern void cpudata_md_init(struct cpu *cpu);
+
 void cpudata_init(struct cpu *cpu, void *stack_top)
 {
 	cpu->self = cpu;
 
 	cpu->cpu_id = __atomic_fetch_add(&next_cpu_id, 1, __ATOMIC_RELAXED);
+
+	cpudata_md_init(cpu);
 
 	clocksource_cpudata_init();
 
@@ -53,11 +57,6 @@ void cpudata_init(struct cpu *cpu, void *stack_top)
 		bsp_ptr = cpu;
 		__all_cpus = &bsp_ptr;
 	}
-
-	cpu->hw_ipl = 0;
-#if CONFIG_LAZY_IPL
-	cpu->soft_ipl = 0;
-#endif
 
 	cpu->current_map = NULL;
 

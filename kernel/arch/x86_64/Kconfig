@@ -5,3 +5,7 @@ menu "Interrupts"
 		help
 			Especially helpful when running under virtualization
 endmenu
+
+config SERIAL
+	bool "Enable serial output"
+	default y

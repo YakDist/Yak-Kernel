@@ -14,7 +14,8 @@
 #include <yak/fs/vfs.h>
 #include <yak/process.h>
 #include <yak/status.h>
-#include "request.h"
+#include <yak/config.h>
+#include <generic-limine/request.h>
 
 LIMINE_REQ
 volatile struct limine_framebuffer_request fb_request = {
@@ -173,6 +174,10 @@ INIT_NODE(fb_setup, limine_fb_setup);
 
 static size_t fb_write(struct console *console, const char *buf, size_t size)
 {
-	flanterm_write(console->private, buf, size);
+	for (size_t i = 0; i < size; i++) {
+		if (buf[i] == '\n')
+			flanterm_write(console->private, "\r", 1);
+		flanterm_write(console->private, &buf[i], 1);
+	}
 	return size;
 }

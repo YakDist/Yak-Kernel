@@ -9,6 +9,7 @@ extern "C" {
 #include <yak/types.h>
 #include <yak/kevent.h>
 #include <yak/cleanup.h>
+#include <yak/config.h>
 
 struct rwlock {
 	struct kevent event;

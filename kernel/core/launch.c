@@ -48,6 +48,9 @@ status_t launch_elf(struct kprocess *proc, struct vm_map *map, char *path,
 
 	status_t rv = YAK_SUCCESS;
 	struct vm_map *orig_map = NULL;
+	void *kernel_stack_ptr = NULL;
+	char **argv_ptr = NULL;
+	char **envp_ptr = NULL;
 
 	struct vnode *vn = NULL;
 	TRY(vfs_open(path, NULL, 0, &vn));
@@ -72,18 +75,18 @@ status_t launch_elf(struct kprocess *proc, struct vm_map *map, char *path,
 	}
 
 	// Again, make sure all the allocations can be filled
-	char **argv_ptr = kzalloc(argc * sizeof(char *));
+	argv_ptr = kzalloc(argc * sizeof(char *));
 	if (!argv_ptr) {
 		goto ErrCleanup;
 	}
 
-	char **envp_ptr = kzalloc(envc * sizeof(char *));
+	envp_ptr = kzalloc(envc * sizeof(char *));
 	if (!envp_ptr) {
 		goto ErrCleanup;
 	}
 
 	// Allocate kernel stack
-	void *kernel_stack_ptr = vm_kalloc(KSTACK_SIZE, 0);
+	kernel_stack_ptr = vm_kalloc(KSTACK_SIZE, 0);
 	if (!kernel_stack_ptr) {
 		goto ErrCleanup;
 	}

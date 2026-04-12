@@ -6,10 +6,11 @@
 #include <yak/vm.h>
 #include <yak/vm/map.h>
 #include <yak/cpudata.h>
+#include <yak/config.h>
 
-#include "gdt.h"
-#include "apic.h"
-#include "asm.h"
+#include <x86_64/gdt.h>
+#include <x86_64/apic.h>
+#include <x86_64/asm.h>
 
 struct [[gnu::packed]] idt_entry {
 	uint16_t isr_low;
@@ -179,9 +180,10 @@ void __isr_c_entry(struct context *frame)
 		ipl_t level_ipl = frame->number >> 4;
 
 #if CONFIG_LAZY_IPL
-		if (ipl >= level_ipl && PERCPU_FIELD_LOAD(hw_ipl) < level_ipl) {
+		if (ipl >= level_ipl &&
+		    PERCPU_FIELD_LOAD(md.hw_ipl) < level_ipl) {
 			write_cr8(level_ipl);
-			PERCPU_FIELD_STORE(hw_ipl, level_ipl);
+			PERCPU_FIELD_STORE(md.hw_ipl, level_ipl);
 			lapic_eoi();
 			lapic_defer_interrupt(frame->number);
 			return;

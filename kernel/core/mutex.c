@@ -5,6 +5,7 @@
 #include <yak/cpudata.h>
 #include <yak/log.h>
 #include <yak/kevent.h>
+#include <yak/config.h>
 
 // NOTE: this was chosen pretty arbitrarily
 #define LOCK_TRY_COUNT 50
