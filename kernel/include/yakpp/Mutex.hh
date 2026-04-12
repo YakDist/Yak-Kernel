@@ -3,6 +3,8 @@
 #include <yak/types.h>
 #include <yak/wait.h>
 #include <yak/mutex.h>
+#include <yak/cpudata.h>
+#include <yakpp/Thread.hh>
 
 namespace yak
 {
@@ -42,6 +44,16 @@ class Mutex {
 	struct kmutex *get()
 	{
 		return &mutex_;
+	}
+
+	Thread *owner()
+	{
+		return __atomic_load_n(&mutex_.owner, __ATOMIC_ACQUIRE);
+	}
+
+	bool isOwner()
+	{
+		return owner() == curthread();
 	}
 
     private:

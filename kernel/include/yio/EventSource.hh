@@ -27,6 +27,11 @@ class EventSource : Object {
 	void enable();
 	void disable();
 
+	/* convenience functions */
+	void lockGate();
+	void unlockGate();
+	bool onThread();
+
 	WorkLoop *workLoop;
 	Action action;
 	Object *owner;

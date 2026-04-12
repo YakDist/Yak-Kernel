@@ -6,6 +6,8 @@ yak_add_sources(
     TreeNode.cc
     Personality.cc
     EventSource.cc
+    InterruptEventSource.cc
+    InterruptController.cc
 
     tty/tty.c
     tty/n_tty.c

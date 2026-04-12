@@ -23,7 +23,13 @@ class WorkLoop : Object {
 
 	bool onThread();
 
+	void lockGate();
+	void unlockGate();
+
     private:
+	Mutex gateLock_;
+	size_t recursiveCount_;
+
 	SpinLock queueLock_;
 
 	Event wakeEvent_;

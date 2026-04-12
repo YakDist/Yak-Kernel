@@ -8,9 +8,9 @@ namespace yak
 {
 
 class Object {
-    public:
 	IO_OBJ_DECLARE_ROOT(Object);
 
+    public:
 	bool isKindOf(const char *name) const
 	{
 		const ClassInfo *info = getClassInfo();

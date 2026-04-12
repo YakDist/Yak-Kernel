@@ -56,4 +56,23 @@ void EventSource::disable()
 	enabled = false;
 }
 
+void EventSource::lockGate()
+{
+	if (workLoop)
+		workLoop->lockGate();
+}
+
+void EventSource::unlockGate()
+{
+	if (workLoop)
+		workLoop->unlockGate();
+}
+
+bool EventSource::onThread()
+{
+	if (workLoop)
+		return workLoop->onThread();
+	return false;
+}
+
 }

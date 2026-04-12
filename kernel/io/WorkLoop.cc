@@ -1,3 +1,4 @@
+#include "yak/panic.h"
 #include <yak/wait.h>
 #include <yak/sched.h>
 #include <yakpp/meta.hh>
@@ -28,6 +29,10 @@ static void enterWorkLoopMain(void *ctx)
 
 void WorkLoop::init()
 {
+	gateLock_.init("gateLock");
+
+	queueLock_.init();
+
 	wakeEvent_.init(false, Event::kEventSync);
 
 	kernel_thread_create("workloop", SCHED_PRIO_TIME_SHARE_END,
@@ -44,6 +49,30 @@ WorkLoop *WorkLoop::workLoop()
 bool WorkLoop::onThread()
 {
 	return curthread() == workThread_;
+}
+
+void WorkLoop::lockGate()
+{
+	if (gateLock_.isOwner()) {
+		// Current thread owns the lock
+		recursiveCount_++;
+		return;
+	}
+
+	// Acquire the lock for the first time
+	gateLock_.lock();
+	recursiveCount_ = 1;
+}
+
+void WorkLoop::unlockGate()
+{
+	if (!gateLock_.isOwner()) {
+		panic("unlockGate from non-owner!\n");
+	}
+
+	if (--recursiveCount_ == 0) {
+		gateLock_.unlock();
+	}
 }
 
 }

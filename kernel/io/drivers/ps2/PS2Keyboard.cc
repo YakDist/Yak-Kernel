@@ -299,14 +299,18 @@ class Ps2Keyboard final : public Service {
 
 IO_OBJ_DEFINE(Ps2Keyboard, Service);
 
-AcpiPersonality ps2kbdPers =
-	AcpiPersonality(&Ps2Keyboard::classInfo, "PNP0303");
+AcpiPersonality ps2kbdPers[] = {
+	AcpiPersonality(&Ps2Keyboard::classInfo, "PNP0303"),
+	AcpiPersonality(&Ps2Keyboard::classInfo, "PNP030B"),
+};
 
 void ps2_register()
 {
 	auto &reg = IoRegistry::getRegistry();
 	//reg.dumpTree();
-	reg.registerPersonality(&ps2kbdPers);
+	for (auto &pers : ps2kbdPers) {
+		reg.registerPersonality(&pers);
+	}
 }
 
 INIT_ENTAILS(ps2_drv);
