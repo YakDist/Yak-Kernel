@@ -1,4 +1,4 @@
-#include "yak-abi/poll.h"
+#include <yak-abi/poll.h>
 #include <string.h>
 #include <yak-abi/termios.h>
 #include <yak-abi/ioctls.h>
@@ -9,7 +9,6 @@
 #include <yak/wait.h>
 #include <yak/types.h>
 #include <yak/tty.h>
-
 #include <yak/log.h>
 
 static void commit_line(struct tty *tty)
@@ -117,6 +116,8 @@ static status_t read(struct tty *tty, char *buf, size_t len, size_t *read_bytes)
 
 	if (t->c_lflag & ICANON) {
 		while (1) {
+			event_clear(&tty->data_available);
+
 			size_t n = check_line(&tty->read_buf);
 			if (n == 0 &&
 			    ringbuffer_available(&tty->read_buf) > 0) {
@@ -131,13 +132,9 @@ static status_t read(struct tty *tty, char *buf, size_t len, size_t *read_bytes)
 				break;
 			}
 
-			event_clear(&tty->data_available);
-
 			kmutex_release(&tty->read_mutex);
-
 			EXPECT(sched_wait(&tty->data_available, WAIT_MODE_BLOCK,
 					  TIMEOUT_INFINITE));
-
 			kmutex_acquire(&tty->read_mutex, TIMEOUT_INFINITE);
 		}
 	} else {
@@ -148,6 +145,8 @@ static status_t read(struct tty *tty, char *buf, size_t len, size_t *read_bytes)
 		bool first_byte = true;
 
 		while (got == 0 || (vmin > 0 && got < vmin)) {
+			event_clear(&tty->data_available);
+
 			size_t avail = ringbuffer_available(&tty->read_buf);
 			if (avail > 0) {
 				size_t take = MIN(avail, len - got);
@@ -169,12 +168,9 @@ static status_t read(struct tty *tty, char *buf, size_t len, size_t *read_bytes)
 					timeout = vtime * 100000000L;
 			}
 
-			event_clear(&tty->data_available);
 			kmutex_release(&tty->read_mutex);
-
 			status_t res = sched_wait(&tty->data_available,
 						  WAIT_MODE_BLOCK, timeout);
-
 			kmutex_acquire(&tty->read_mutex, TIMEOUT_INFINITE);
 
 			if (IS_ERR(res)) {

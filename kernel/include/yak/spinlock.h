@@ -72,11 +72,16 @@ void spinlock_lock_noipl(struct spinlock *lock);
 void spinlock_unlock_noipl(struct spinlock *lock);
 #endif
 
-static inline ipl_t spinlock_lock(struct spinlock *lock)
+static inline ipl_t spinlock_lock_at(struct spinlock *lock, ipl_t at)
 {
-	ipl_t ipl = ripl(IPL_DPC);
+	ipl_t ipl = ripl(at);
 	spinlock_lock_noipl(lock);
 	return ipl;
+}
+
+static inline ipl_t spinlock_lock(struct spinlock *lock)
+{
+	return spinlock_lock_at(lock, IPL_DPC);
 }
 
 static inline int spinlock_lock_interrupts(struct spinlock *lock)

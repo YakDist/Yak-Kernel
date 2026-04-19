@@ -15,12 +15,6 @@ ipl_t curipl()
 ipl_t ripl(ipl_t ipl)
 {
 	return PERCPU_FIELD_XCHG(md.soft_ipl, ipl);
-
-	/*
-	ipl_t old = curcpu()->soft_ipl;
-	curcpu()->soft_ipl = ipl;
-	return old;
-	*/
 }
 
 void xipl(ipl_t ipl)

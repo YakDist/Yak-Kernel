@@ -96,16 +96,16 @@ class Ps2Keyboard final : public Service {
 		bool extended = false;
 
 		while (true) {
-			auto state = spinlock_lock_interrupts(&buf_lock);
+			ipl_t state = spinlock_lock_at(&buf_lock, IPL_HIGH);
 			if (!ringbuffer_available(&buf_)) {
-				spinlock_unlock_interrupts(&buf_lock, state);
+				spinlock_unlock(&buf_lock, state);
 				break;
 			}
 
 			uint8_t sc;
 			ringbuffer_get(&buf_, &sc, 1);
 
-			spinlock_unlock_interrupts(&buf_lock, state);
+			spinlock_unlock(&buf_lock, state);
 
 			if (sc == 0x2a || sc == 0xaa || sc == 0x36 ||
 			    sc == 0xb6) {
@@ -273,6 +273,7 @@ class Ps2Keyboard final : public Service {
 		uacpi_free_resources(kb_res);
 
 		pr_info("ps2 ready :3\n");
+		pr_info("beware: unstable pos\n");
 
 		return true;
 	}
