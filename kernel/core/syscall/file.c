@@ -663,10 +663,12 @@ DEFINE_SYSCALL(SYS_READLINKAT, readlinkat, int dirfd, const char *user_path,
 		break;
 	}
 
-	if (vn == NULL)
+	if (vn == NULL) {
 		return SYS_ERR(ENOENT);
+	}
 
 	if (vn->type != VLNK) {
+		VOP_UNLOCK(vn);
 		vnode_deref(vn);
 		return SYS_ERR(EINVAL);
 	}
