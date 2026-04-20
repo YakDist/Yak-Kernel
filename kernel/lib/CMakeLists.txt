@@ -3,7 +3,7 @@ yak_add_sources(
 	stack.cpp
 	assert.cpp
 	abort.cpp
-
+	frigg.cpp
 	vmem.cpp
 )
 
