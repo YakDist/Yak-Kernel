@@ -2,7 +2,9 @@
 
 #include <atomic>
 #include <cstddef>
+#include <frg/manual_box.hpp>
 #include <yak/arch-cpudata.h>
+#include <yak/dpc.h>
 #include <yak/percpu.h>
 #include <yak/sched.h>
 #include <yak/thread.h>
@@ -23,7 +25,9 @@ struct CpuData {
   Thread *current_thread;
   Scheduler sched;
 
+  frg::manual_box<DpcQueue> dpc_queue;
 
+  std::atomic<uint32_t> softints_pending;
 
   static void initialize(CpuData *data);
 

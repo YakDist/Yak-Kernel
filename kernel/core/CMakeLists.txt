@@ -5,4 +5,7 @@ yak_add_sources(
 	sched.cpp
 	ps.cpp
 	numa.cpp
+	cpudata.cpp
+	dpc.cpp
+	softint.cpp
 )

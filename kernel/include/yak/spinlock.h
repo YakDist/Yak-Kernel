@@ -82,6 +82,14 @@ public:
     iplx(prev_ipl);
   }
 
+  void lock_noipl() {
+    Spinlock::lock();
+  }
+
+  void unlock_noipl() {
+    Spinlock::unlock();
+  }
+
 private:
   Ipl prev_ipl;
 };
