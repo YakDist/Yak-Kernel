@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstddef>
 #include <yak/arch-cpudata.h>
 #include <yak/percpu.h>
@@ -12,23 +13,27 @@ struct CpuData {
   CpuData *self;
   arch::ArchCpuData md;
 
+  size_t id;
+  bool bsp;
+
   unsigned int numa_domain;
+
+  void *kernel_stack_top;
 
   Thread *current_thread;
   Scheduler sched;
 
-  size_t id;
-  bool bsp;
 
-  void *kernel_stack_top;
+
+  static void initialize(CpuData *data);
+
+  static inline CpuData *Current() {
+    return CPUDATA_LOAD(self);
+  }
+
+  static inline bool OnBsp() {
+    return CPUDATA_LOAD(bsp);
+  }
 };
-
-static inline CpuData &get_cpu_self() {
-  return *CPUDATA_LOAD(self);
-}
-
-static inline bool cpu_is_bsp() {
-  return CPUDATA_LOAD(bsp);
-}
 
 } // namespace yak

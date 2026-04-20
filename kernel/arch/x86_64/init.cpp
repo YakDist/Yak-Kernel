@@ -152,6 +152,8 @@ void early_init() {
   // Setup GSBASE so that %gs:0 == the kernel ELF's PERCPU area
   //
   // kernel_entry() makes sure that cpudata->self already points to self
+  // (as well as initializing all other core kernel fields)
+  //
   // no need to zero memory for the BSP. percpu is bss!
   asm_wrmsr(msr::GSBASE, (uint64_t) __percpu_start);
 

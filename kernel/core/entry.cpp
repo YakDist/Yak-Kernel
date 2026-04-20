@@ -50,11 +50,13 @@ extern "C" void kernel_entry() {
   pr_info("Booting Yak/" ARCH_STR " v" KERNEL_VERSION_STR
           " (commit: " KERNEL_GIT_HASH ")\n");
 
-  bsp_cpu_data.self = &bsp_cpu_data;
+  run_init_array();
+
+  CpuData::initialize(&bsp_cpu_data);
+  bsp_cpu_data.bsp = true;
 
   arch::early_init();
 
-  run_init_array();
 
   arch::mem_init();
 
