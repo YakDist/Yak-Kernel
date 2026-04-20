@@ -1,6 +1,7 @@
 #pragma once
 
 #include <compare>
+#include <utility>
 #include <yak/arch-ipl.h>
 
 namespace yak {
@@ -14,11 +15,11 @@ enum class Ipl : unsigned int {
 };
 
 constexpr auto operator<=>(Ipl a, Ipl b) {
-  return static_cast<unsigned int>(a) <=> static_cast<unsigned int>(b);
+  return std::to_underlying(a) <=> std::to_underlying(b);
 }
 
 constexpr bool operator==(Ipl a, Ipl b) {
-  return static_cast<unsigned int>(a) == static_cast<unsigned int>(b);
+  return std::to_underlying(a) == std::to_underlying(b);
 }
 
 Ipl iplget();
