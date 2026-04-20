@@ -2,3 +2,4 @@
 *.xbstrap
 /build
 qemulog.txt
+__pycache__
