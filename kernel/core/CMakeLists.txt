@@ -3,6 +3,7 @@ yak_add_sources(
 	log.cpp
 	panic.cpp
 	sched.cpp
+	thread.cpp
 	ps.cpp
 	numa.cpp
 	cpudata.cpp

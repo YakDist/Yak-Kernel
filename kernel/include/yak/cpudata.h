@@ -23,7 +23,7 @@ struct CpuData {
   void *kernel_stack_top;
 
   Thread *current_thread;
-  Scheduler sched;
+  frg::manual_box<Scheduler> sched;
 
   frg::manual_box<DpcQueue> dpc_queue;
 

@@ -12,6 +12,8 @@ yak_add_sources(
 	syscall.cpp
 	ipl.cpp
 	apic.cpp
+	sched.cpp
+	sched.S
 )
 
 yak_compile_options(

@@ -6,6 +6,9 @@
 #include <yak/log.h>
 #include <yak/math.h>
 #include <yak/percpu.h>
+#include <yak/ps.h>
+#include <yak/sched.h>
+#include <yak/thread.h>
 #include <yak/version.h>
 #include <yak/vm/memblock.h>
 #include <yak/vm/page.h>
@@ -43,7 +46,10 @@ bool is_canonical(uintptr_t addr);
 
 extern void test_fn();
 
-extern "C" void kernel_entry() {
+Thread bsp_idle_thread =
+    Thread("idle_thread0", SchedPrio::Idle, &kernel_process, false);
+
+extern "C" void kernel_entry(void *bsp_idle_stack_top) {
 #if CONFIG_BOOT_BANNER
   pr_info("%s", boot_banner);
 #endif
@@ -57,6 +63,11 @@ extern "C" void kernel_entry() {
 
   arch::early_init();
 
+  bsp_idle_thread.kernel_stack_top = bsp_idle_stack_top;
+  Scheduler::init(&bsp_cpu_data, &bsp_idle_thread);
+
+  // We now have defined thread-state;
+  // Sleeping locks are usable.
 
   arch::mem_init();
 
@@ -64,12 +75,22 @@ extern "C" void kernel_entry() {
 
   boot_memblock.done();
 
+  auto t = Thread("test", SchedPrio::RealTime, &kernel_process, false);
+  const size_t size = 4096;
+  [[gnu::aligned(16)]]
+  static char buf[size];
+  t.init_context((void *) &buf[size],
+                 [](void *, void *) {
+                   pr_debug("enter!\n");
+                   ;
+                 },
+                 nullptr, nullptr);
+  Scheduler::for_this_cpu().resume(&t);
+
   // XXX: rather run this on the kmain thread!
   init_engine.run();
 
-  panic("End Of Kernel reached!\n");
-
-  asm volatile("cli; hlt");
+  bsp_cpu_data.sched->idle_loop();
 }
 
 } // namespace yak

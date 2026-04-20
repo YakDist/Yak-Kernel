@@ -45,6 +45,8 @@ exe_entry:
 	movq %rax, __stack_chk_guard(%rip)
 #endif
 
+	# kernel_entry's first arg is the "idle" thread stack top for the BSP
+	lea __kernel_entry_stack_top(%rip), %rdi
 	call kernel_entry
 
 	cli

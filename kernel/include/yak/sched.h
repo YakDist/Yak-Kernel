@@ -57,8 +57,12 @@ struct RunQueue {
 
 class Scheduler {
 public:
-  static void init(CpuData *cpu);
+  static void init(CpuData *cpu, Thread *idle_thread);
   static Scheduler &for_this_cpu();
+
+  Scheduler(CpuData *cpu, Thread *idle_thread)
+      : sched_cpu_(cpu),
+        idle_thread_(idle_thread) {}
 
   void insert(Thread *thread, bool remote);
 
@@ -69,16 +73,21 @@ public:
 
   Thread *select_next(SchedPrio priority);
 
+  void commit_reschedule();
+
+  [[noreturn]]
+  void idle_loop();
+
 private:
-  IplSpinlock lock;
+  IplSpinlock lock_;
 
-  RunQueue rr_queue;
-  ThreadQueue idle_queue;
+  RunQueue rr_queue_;
+  ThreadQueue idle_queue_;
 
-  CpuData *sched_cpu;
+  CpuData *sched_cpu_;
 
-  Thread *idle_thread;
-  Thread *next_thread;
+  Thread *idle_thread_;
+  Thread *next_thread_;
 };
 
 } // namespace yak

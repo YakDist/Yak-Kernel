@@ -2,6 +2,7 @@
 
 #include <frg/list.hpp>
 #include <frg/string.hpp>
+#include <yak/arch-pcb.h>
 #include <yak/sched_prio.h>
 #include <yak/spinlock.h>
 
@@ -41,8 +42,12 @@ enum class WaitPhase {
 class Process;
 struct CpuData;
 
+static constexpr size_t THREAD_MAX_NAME_LEN = 32;
+
+using ThreadEntryFn = void (*)(void *, void *);
+
 struct Thread {
-  static constexpr size_t THREAD_MAX_NAME_LEN = 32;
+  arch::ThreadPcb md;
 
   IplSpinlock lock;
 
@@ -66,8 +71,16 @@ struct Thread {
   frg::default_list_hook<Thread> list_hook;
   frg::default_list_hook<Thread> queue_hook;
 
-  Thread(frg::string_view name, unsigned int initial_priority,
+  Thread(frg::string_view name, SchedPrio initial_priority,
          Process *parent_process, bool user_thread);
+
+  static Thread *Current();
+
+  void init_context(void *kstack_top, ThreadEntryFn entry, void *ctx1,
+                    void *ctx2);
+
+  [[noreturn]]
+  void exit();
 };
 
 using ThreadList = frg::intrusive_list<

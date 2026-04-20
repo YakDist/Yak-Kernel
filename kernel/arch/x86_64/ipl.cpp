@@ -4,6 +4,7 @@
 #include <yak/ipl.h>
 #include <yak/panic.h>
 #include <yak/percpu.h>
+#include <yak/softint.h>
 
 namespace yak {
 
@@ -38,6 +39,11 @@ void iplx(Ipl ipl) {
 #else
   asm_wrcr8(static_cast<uint64_t>(ipl));
 #endif
+
+  if (CpuData::Current()->softints_pending.load(std::memory_order_relaxed) >>
+      std::to_underlying(ipl)) {
+    softint_dispatch(ipl);
+  }
 }
 
 } // namespace yak
