@@ -145,6 +145,7 @@ static void detect_features(CpuFeatures &f) {
   f.xsave = ecx & (1 << 26);
   f.avx = ecx & (1 << 28);
   f.x2apic = ecx & (1 << 21);
+  f.mwait = ecx & (1 << 3);
 }
 
 void early_init() {

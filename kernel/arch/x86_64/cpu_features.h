@@ -14,6 +14,7 @@ struct CpuFeatures {
   bool xsave;
   bool avx;
   bool x2apic;
+  bool mwait;
 };
 
 extern CpuFeatures bsp_cpu_features;
