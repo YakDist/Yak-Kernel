@@ -372,11 +372,14 @@ void mem_reclaim() {
   auto memmap = get_memmap();
   boot_memblock.coalesce_blocks();
   boot_memblock.reserved.print();
+  size_t reclaimed_count = 0;
   for (auto entry : memmap) {
     if (entry->type != LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE)
       continue;
     boot_memblock.free(entry->base, entry->length);
+    reclaimed_count += entry->length;
   }
+  pr_info("reclaim %ld KiB\n", reclaimed_count / 1024);
 }
 
 } // namespace yak::limine
