@@ -3,4 +3,5 @@ yak_add_sources(
 	memblock.cpp
 	generic_pagemap.cpp
 	map.cpp
+	stack.cpp
 )

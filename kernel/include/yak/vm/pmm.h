@@ -37,7 +37,7 @@ static constexpr size_t MAX_AFFINITIES = 64;
 extern FixedArena<Affinity, MAX_AFFINITIES> pmm_affinities;
 
 constexpr inline unsigned int pmm_size_to_order(size_t size) {
-  return next_ilog2(size) - arch::PAGE_SHIFT;
+  return next_ilog2(size) - arch::PAGE_SHIFT - 1;
 }
 
 void pmm_add_region(paddr_t base, paddr_t end);

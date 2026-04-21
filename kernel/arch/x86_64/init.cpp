@@ -12,6 +12,7 @@
 #include <x86_64/idt.h>
 #include <x86_64/lapic.h>
 #include <x86_64/msr.h>
+#include <x86_64/tss.h>
 #include <yak/arch-mm.h>
 #include <yak/cpudata.h>
 #include <yak/init.h>
@@ -170,6 +171,10 @@ void mem_init() {
 
 void boot_finalize() {
   limine::mem_reclaim();
+}
+
+void pmm_available() {
+  tss_cpu_init();
 }
 
 static uacpi_iteration_decision check_srat([[maybe_unused]] uacpi_handle user,

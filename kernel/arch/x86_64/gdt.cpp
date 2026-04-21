@@ -1,10 +1,14 @@
 #include <stdint.h>
 #include <x86_64/gdt.h>
+#include <x86_64/tss.h>
+#include <yak/arch-intr.h>
 #include <yak/cpudata.h>
 #include <yak/percpu.h>
+#include <yak/vm/address.h>
+#include <yak/vm/stack.h>
 
 namespace yak::arch {
-struct [[gnu::packed]] GdtEntry {
+struct GdtEntry {
   uint16_t limit;
   uint16_t low;
   uint8_t mid;
@@ -12,8 +16,15 @@ struct [[gnu::packed]] GdtEntry {
   uint8_t granularity;
   uint8_t high;
 };
+static_assert(offsetof(GdtEntry, limit) == 0);
+static_assert(offsetof(GdtEntry, low) == 2);
+static_assert(offsetof(GdtEntry, mid) == 4);
+static_assert(offsetof(GdtEntry, access) == 5);
+static_assert(offsetof(GdtEntry, granularity) == 6);
+static_assert(offsetof(GdtEntry, high) == 7);
+static_assert(sizeof(GdtEntry) == 8);
 
-struct [[gnu::packed]] GdtTssEntry {
+struct GdtTssEntry {
   uint16_t length;
   uint16_t low;
   uint8_t mid;
@@ -23,17 +34,32 @@ struct [[gnu::packed]] GdtTssEntry {
   uint32_t upper;
   uint32_t rsv;
 };
+static_assert(offsetof(GdtTssEntry, length) == 0);
+static_assert(offsetof(GdtTssEntry, low) == 2);
+static_assert(offsetof(GdtTssEntry, mid) == 4);
+static_assert(offsetof(GdtTssEntry, access) == 5);
+static_assert(offsetof(GdtTssEntry, flags) == 6);
+static_assert(offsetof(GdtTssEntry, high) == 7);
+static_assert(offsetof(GdtTssEntry, upper) == 8);
+static_assert(offsetof(GdtTssEntry, rsv) == 12);
+static_assert(sizeof(GdtTssEntry) == 16);
 
-struct [[gnu::packed]] Gdt {
-  GdtEntry entries[static_cast<int>(GdtIndex::Tss)];
+struct Gdt {
+  GdtEntry entries[std::to_underlying(GdtIndex::Tss)];
   GdtTssEntry tss;
 };
+static_assert(sizeof(Gdt) ==
+              std::to_underlying(GdtIndex::Tss) * sizeof(GdtEntry) +
+                  sizeof(GdtTssEntry));
 
+[[gnu::aligned(16)]]
 static Gdt pcpu_gdt PERCPU_DECL;
-static Gdt pcpu_tss PERCPU_DECL;
+
+[[gnu::aligned(16)]]
+static Tss pcpu_tss PERCPU_DECL;
 
 static inline GdtEntry *percpu_gdt_entry(GdtIndex index) {
-  return PERCPU_PTR(pcpu_gdt.entries[static_cast<int>(index)]);
+  return PERCPU_PTR(pcpu_gdt.entries[std::to_underlying(index)]);
 }
 
 static inline GdtTssEntry *percpu_tss_entry() {
@@ -99,6 +125,38 @@ void gdt_reload() {
       : "r"(&gdtr), "i"((uint16_t) GDT_SEL_KERNEL_CODE),
         "r"(GDT_SEL_KERNEL_DATA)
       : "rax", "memory");
+}
+
+static inline void tss_reload() {
+  auto state = interrupt_state();
+  disable_interrupts();
+
+  vaddr_t tss_addr = (vaddr_t) PERCPU_PTR(pcpu_tss);
+
+  GdtTssEntry tss_entry;
+  tss_entry.low = (uint16_t) (tss_addr);
+  tss_entry.mid = (uint8_t) (tss_addr >> 16);
+  tss_entry.high = (uint8_t) (tss_addr >> 24);
+  tss_entry.upper = (uint32_t) (tss_addr >> 32);
+  tss_entry.flags = 0;
+  tss_entry.access = 0b10001001;
+  tss_entry.rsv = 0;
+
+  *percpu_tss_entry() = tss_entry;
+
+  asm volatile("ltr %0" ::"rm"((uint16_t) GDT_SEL_TSS) : "memory");
+
+  if (state)
+    enable_interrupts();
+}
+
+void tss_cpu_init() {
+  Tss *tss = PERCPU_PTR(pcpu_tss);
+  memset(tss, 0, sizeof(Tss));
+  tss->ist1 = kstack_alloc();
+  tss->ist2 = kstack_alloc();
+  tss->ist3 = kstack_alloc();
+  tss_reload();
 }
 
 } // namespace yak::arch

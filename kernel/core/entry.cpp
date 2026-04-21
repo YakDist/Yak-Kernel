@@ -75,6 +75,8 @@ extern "C" void kernel_entry(void *bsp_idle_stack_top) {
 
   boot_memblock.done();
 
+  arch::pmm_available();
+
   auto t = Thread("test", SchedPrio::RealTime, &kernel_process, false);
   const size_t size = 4096;
   [[gnu::aligned(16)]]
