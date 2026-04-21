@@ -75,7 +75,15 @@ set(EXTRA_KCONFIG_TARGET_COMMAND_FOR_randconfig
     ${KCONFIG_SCRIPTS_DIR}/randconfig.py
 )
 
-set_ifndef(KCONFIG_TARGETS menuconfig guiconfig hardenconfig randconfig)
+set(EXTRA_KCONFIG_TARGET_COMMAND_FOR_oldconfig
+    ${KCONFIG_SCRIPTS_DIR}/oldconfig.py
+)
+
+set(EXTRA_KCONFIG_TARGET_COMMAND_FOR_olddefconfig
+    ${KCONFIG_SCRIPTS_DIR}/olddefconfig.py
+)
+
+set_ifndef(KCONFIG_TARGETS menuconfig guiconfig hardenconfig randconfig oldconfig olddefconfig)
 
 foreach(kconfig_target ${KCONFIG_TARGETS} ${EXTRA_KCONFIG_TARGETS})
     add_custom_target(

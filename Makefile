@@ -6,6 +6,18 @@ help:  ## Display this help
 menuconfig: ## Open menuconfig
 	ninja -C build menuconfig
 
+guiconfig: ## Open GUI menuconfig
+	ninja -C build guiconfig
+
+oldconfig: ## Run oldconfig
+	ninja -C build oldconfig
+
+olddefconfig: ## Run olddefconfig
+	ninja -C build olddefconfig
+
+savedefconfig: ## Save defconfig based on local build
+	KCONFIG_CONFIG=build/.config python3 scripts/kconfig/savedefconfig.py
+
 local_build: ## Build local CMake build
 	ninja -C build
 
