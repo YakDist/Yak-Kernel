@@ -9,7 +9,7 @@ pkg_check_modules(FREESTND_C_HDRS REQUIRED IMPORTED_TARGET freestnd-c-hdrs-x86_6
 pkg_check_modules(FREESTND_CXX_HDRS REQUIRED IMPORTED_TARGET freestnd-cxx-hdrs-x86_64)
 pkg_check_modules(FRIGG REQUIRED IMPORTED_TARGET frigg)
 
-target_include_directories(yak PRIVATE
+yak_add_includes(
 	${FREESTND_C_HDRS_INCLUDE_DIRS}
 	${FREESTND_CXX_HDRS_INCLUDE_DIRS}
 	${FRIGG_INCLUDE_DIRS}
@@ -41,9 +41,7 @@ yak_add_includes(
 	include
 	arch
 	arch/${YAK_ARCH}/include
-)
 
-target_include_directories(yak PRIVATE
 	# Contains version.h
 	${CMAKE_BINARY_DIR}/generated/include
 	# Contains config.h
