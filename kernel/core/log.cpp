@@ -22,35 +22,16 @@ static bool printk_available = false;
 
 static constinit InterruptSpinLock early_printk_lock;
 
-char early_buf[4096];
-constinit size_t early_buf_pos = 0;
+char early_buf[2048];
 
 [[gnu::format(printf, 1, 0)]]
 static void printk_early(const char *fmt, va_list args) {
   auto guard = frg::guard(&early_printk_lock);
 
-  size_t remaining = sizeof(early_buf) - early_buf_pos;
-  if (remaining <= 1) {
-    early_buf_pos = 0;
-    remaining = sizeof(early_buf);
-  }
+  size_t written = npf_vsnprintf(early_buf, sizeof(early_buf) - 1, fmt, args);
+  early_buf[sizeof(early_buf) - 1] = '\0';
 
-  int written = npf_vsnprintf(early_buf + early_buf_pos, remaining, fmt, args);
-
-  if (written > 0) {
-    size_t actual_len =
-        ((size_t) written >= remaining) ? (remaining - 1) : (size_t) written;
-
-    early_puts(early_buf + early_buf_pos, actual_len);
-
-    early_buf_pos += actual_len;
-
-    early_buf[early_buf_pos] = '\0';
-  }
-
-  if (early_buf_pos > sizeof(early_buf) - 64) {
-    early_buf_pos = 0;
-  }
+  early_puts(early_buf, written);
 }
 
 [[gnu::format(printf, 2, 0)]]
