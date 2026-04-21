@@ -14,6 +14,7 @@ yak_add_sources(
 	apic.cpp
 	sched.cpp
 	sched.S
+	string.S
 )
 
 yak_compile_options(
