@@ -259,6 +259,24 @@ static void init_memblock(std::span<limine_memmap_entry *> memmap) {
   }
 }
 
+// clang-format off
+[[maybe_unused]]
+static const char* memmap_type_to_string(uint64_t type) {
+    switch (type) {
+        case LIMINE_MEMMAP_USABLE:                 return "Usable";
+        case LIMINE_MEMMAP_RESERVED:               return "Reserved";
+        case LIMINE_MEMMAP_ACPI_RECLAIMABLE:       return "ACPI Reclaimable";
+        case LIMINE_MEMMAP_ACPI_NVS:               return "ACPI NVS";
+        case LIMINE_MEMMAP_BAD_MEMORY:             return "Bad Memory";
+        case LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE: return "Bootloader Reclaimable";
+        case LIMINE_MEMMAP_EXECUTABLE_AND_MODULES: return "Executable and Modules";
+        case LIMINE_MEMMAP_FRAMEBUFFER:            return "Framebuffer";
+        case LIMINE_MEMMAP_RESERVED_MAPPED:        return "Reserved (Mapped)";
+        default:                                   return "Unknown";
+    }
+}
+// clang-format on
+
 constexpr bool direct_map_4gib = false;
 constexpr size_t FOUR_GIB = 4ULL * 1024 * 1024 * 1024;
 
@@ -271,6 +289,8 @@ static void map_hhdm(std::span<limine_memmap_entry *> memmap) {
                                      PROT_READ | PROT_WRITE, CACHE_DEFAULT);
   }
 
+  paddr_t last_end = 0;
+
   // Then map any other regions from memmap
   for (auto entry : memmap) {
     if constexpr (direct_map_4gib) {
@@ -281,8 +301,8 @@ static void map_hhdm(std::span<limine_memmap_entry *> memmap) {
     if (entry->type == LIMINE_MEMMAP_BAD_MEMORY)
       continue;
 
-    paddr_t base = entry->base;
-    size_t length = entry->length;
+    paddr_t base = align_down<arch::PAGE_SIZE>(entry->base);
+    size_t length = align_up<arch::PAGE_SIZE>(entry->length);
 
     if constexpr (direct_map_4gib) {
       if (entry->base < FOUR_GIB) {
@@ -291,11 +311,28 @@ static void map_hhdm(std::span<limine_memmap_entry *> memmap) {
       }
     }
 
+    paddr_t end = base + length;
+
+    if (base < last_end) {
+      // fully overlapping
+      if (end <= last_end)
+        continue;
+
+      // partially overlapping
+      base = last_end;
+      length = end - base;
+    }
+
+    last_end = end;
+
     VMCache cache = CACHE_DEFAULT;
 #ifdef x86_64
     if (entry->type == LIMINE_MEMMAP_FRAMEBUFFER)
       cache = arch::CACHE_WRITECOMBINE;
 #endif
+
+    pr_debug("hhdm map: %lx+%lx (type: %s)\n", base, length,
+             memmap_type_to_string(entry->type));
 
     kmap.page_map().enter_boot_large(base, base + arch::HHDM_BASE, length,
                                      PROT_READ | PROT_WRITE, cache);

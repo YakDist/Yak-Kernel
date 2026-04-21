@@ -80,6 +80,10 @@ template <typename Traits>
 void GenericPageMap<Traits>::enter_boot_large(paddr_t phys_base,
                                               vaddr_t virt_base, size_t length,
                                               VMProt prot, VMCache cache) {
+  assert(is_aligned_pow2<arch::PAGE_SIZE>(phys_base));
+  assert(is_aligned_pow2<arch::PAGE_SIZE>(virt_base));
+  assert(is_aligned_pow2<arch::PAGE_SIZE>(length));
+
   paddr_t end = phys_base + length;
   paddr_t addr = phys_base;
 
@@ -126,8 +130,7 @@ void GenericPageMap<Traits>::enter_boot_large(paddr_t phys_base,
 
     size_t next_large = Traits::PAGE_SIZES[1];
     size_t misalign = addr & (next_large - 1);
-
-    size_t advance = next_large - misalign;
+    size_t advance = misalign ? (next_large - misalign) : next_large;
 
     if (addr + advance > end)
       advance = end - addr;
@@ -135,12 +138,12 @@ void GenericPageMap<Traits>::enter_boot_large(paddr_t phys_base,
     size_t pages = advance >> arch::PAGE_SHIFT;
 
     while (pages--) {
+      if (addr >= end)
+        break;
       virt_addr = virt_base + (addr - phys_base);
       enter_boot(virt_addr, addr, prot, cache, 0);
       addr += arch::PAGE_SIZE;
     }
-
-    continue;
   }
 }
 
