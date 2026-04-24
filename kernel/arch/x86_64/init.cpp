@@ -165,15 +165,7 @@ void early_init() {
   setup_cpu();
 }
 
-void mem_init() {
-  limine::mem_init();
-}
-
-void boot_finalize() {
-  limine::mem_reclaim();
-}
-
-void pmm_available() {
+void post_pmm() {
   tss_cpu_init();
 }
 

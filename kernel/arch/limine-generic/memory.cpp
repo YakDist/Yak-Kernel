@@ -1,11 +1,12 @@
-#include <string.h>
 #define pr_fmt(fmt) "limine: " fmt
 
 #include <assert.h>
 #include <cstddef>
+#include <limine-generic/init.h>
 #include <limine-generic/request.h>
 #include <limine.h>
 #include <span>
+#include <string.h>
 #include <yak/arch-mm.h>
 #include <yak/kernel-file.h>
 #include <yak/log.h>
@@ -56,11 +57,31 @@ LIMINE_REQ static volatile struct limine_executable_address_request
 }
 
 namespace yak::arch {
-size_t HHDM_BASE;
+vaddr_t HHDM_BASE;
 size_t PMAP_LEVELS;
+
+#if defined(riscv64)
+vaddr_t PFNDB_BASE;
+#endif
 
 [[gnu::weak]]
 void post_memblock() {}
+
+[[gnu::weak]]
+void post_pmm() {}
+
+[[gnu::weak]]
+void early_init() {}
+
+[[gnu::weak]]
+void mem_init() {
+  limine::mem_init();
+}
+
+[[gnu::weak]]
+void boot_finalize() {
+  limine::mem_reclaim();
+}
 
 } // namespace yak::arch
 
@@ -128,7 +149,8 @@ static vaddr_t map_pfndb_region(vaddr_t virt_base, size_t length, int nid) {
   vaddr_t end = virt_base + length;
 
   auto select_level = [](vaddr_t addr, vaddr_t end) {
-    for (size_t i = std::size(Traits::PAGE_SIZES); i-- > PFNDB_MIN_PAGE_SIZE;) {
+    for (size_t i = Traits::max_page_size_idx() + 1;
+         i-- > PFNDB_MIN_PAGE_SIZE;) {
       const size_t page_size = Traits::PAGE_SIZES[i];
       if (is_aligned_pow2(addr, page_size) && addr + page_size <= end)
         return i;
@@ -351,6 +373,14 @@ auto get_memmap() {
 void mem_init() {
   init_hhdm();
   init_paging_mode();
+
+#ifdef riscv64
+  arch::PFNDB_BASE = 0xffffc00000000000;
+
+  if (arch::PMAP_LEVELS == 3) {
+    arch::PFNDB_BASE = arch::HHDM_BASE + GiB(128);
+  }
+#endif
 
   auto memmap = get_memmap();
 

@@ -7,7 +7,6 @@
 #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS      1
 #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS   1
 #define NANOPRINTF_USE_ALT_FORM_FLAG                 1
-#define NANOPRINTF_VISIBILITY_STATIC                 1
 #include <nanoprintf.h>
 
 #include <cstdarg>

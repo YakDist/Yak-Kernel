@@ -50,6 +50,8 @@ Thread bsp_idle_thread =
     Thread("idle_thread0", SchedPrio::Idle, &kernel_process, false);
 
 extern "C" void kernel_entry(void *bsp_idle_stack_top) {
+  printk(LogLevel::Raw, "\e[0m");
+
 #if CONFIG_BOOT_BANNER
   pr_info("%s", boot_banner);
 #endif
@@ -75,7 +77,7 @@ extern "C" void kernel_entry(void *bsp_idle_stack_top) {
 
   boot_memblock.done();
 
-  arch::pmm_available();
+  arch::post_pmm();
 
   auto t = Thread("test", SchedPrio::RealTime, &kernel_process, false);
   const size_t size = 4096;

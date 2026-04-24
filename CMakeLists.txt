@@ -3,7 +3,9 @@ cmake_minimum_required(VERSION 3.21)
 set(YAK_ARCH "" CACHE STRING "Kernel architecture")
 set(BUILD_CONFIG "default" CACHE STRING "Build defconfig")
 
-if (NOT YAK_ARCH STREQUAL "x86_64")
+set(YAK_ARCHS_SUPPORTED x86_64 riscv64)
+
+if (NOT YAK_ARCH IN_LIST YAK_ARCHS_SUPPORTED)
 	message(FATAL_ERROR
 		"Unsupported architecture: ${YAK_ARCH}"
 	)

@@ -4,6 +4,10 @@
 
 namespace yak::arch {
 
+static inline void interrupt_wait() {
+  asm volatile("hlt" ::: "memory");
+}
+
 static inline bool interrupt_state() {
   uint64_t fq;
   asm volatile( //
@@ -14,11 +18,11 @@ static inline bool interrupt_state() {
 }
 
 static inline void disable_interrupts() {
-  asm volatile("cli");
+  asm volatile("cli" ::: "memory");
 }
 
 static inline void enable_interrupts() {
-  asm volatile("sti");
+  asm volatile("sti" ::: "memory");
 }
 
 } // namespace yak::arch

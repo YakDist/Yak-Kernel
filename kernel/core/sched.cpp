@@ -267,7 +267,9 @@ void Scheduler::idle_loop() {
 
 #if defined x86_64
     // TODO: implement monitor/mwait, proper idle driver?
-    asm volatile("hlt");
+    arch::interrupt_wait();
+#elif defined riscv64
+    arch::interrupt_wait();
 #else
 #error "Port idle_loop to this architecture!"
 #endif

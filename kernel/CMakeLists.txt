@@ -98,7 +98,6 @@ yak_compile_options(
 	-fno-semantic-interposition
 	-fvisibility=hidden
 	-fasynchronous-unwind-tables
-	-mgeneral-regs-only
 	-pipe
 	-fdata-sections
 	-ffunction-sections

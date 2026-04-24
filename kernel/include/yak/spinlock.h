@@ -8,6 +8,12 @@ namespace yak {
 
 #ifdef x86_64
 #define busyloop_hint() asm volatile("pause" ::: "memory");
+#elifdef riscv64
+// This is 'pause' (encoded as fence w, 0)
+// On Zihintpause chips, it saves power
+// On chips not supporting this instr. it's equivalent to a nop,
+//  thus the 4byte encoding
+#define busyloop_hint() asm volatile(".4byte 0x0100000f" ::: "memory")
 #else
 #warning "unimplemented busyloop_hint"
 #define busyloop_hint()

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <x86_64/asm.h>
+#include <x86_64/cpu_features.h>
 #include <yak/arch-mm.h>
+#include <yak/size-macros.h>
 #include <yak/vm/flags.h>
 #include <yak/vm/generic_pagemap.h>
 
@@ -30,12 +32,18 @@ struct X86_Paging {
   static constexpr size_t LEVEL_SHIFTS[] = {12, 21, 30, 39, 48};
   static constexpr size_t LEVEL_BITS[] = {9, 9, 9, 9, 9};
   static constexpr size_t LEVEL_ENTRIES[] = {512, 512, 512, 512, 512};
-  static constexpr size_t PAGE_SIZES[] = {4096, 2 * 1024 * 1024,
-                                          1ULL * 1024 * 1024 * 1024};
+  static constexpr size_t PAGE_SIZES[] = {KiB(4), MiB(2), GiB(1)};
 
   static constexpr size_t MAX_LEVELS = 5;
+
   static inline size_t levels() {
     return arch::PMAP_LEVELS;
+  }
+
+  static inline size_t max_page_size_idx() {
+    if (!arch::bsp_cpu_features.pdpe1gb)
+      return 1;
+    return 2;
   }
 
   static inline void activate(paddr_t top_level) {

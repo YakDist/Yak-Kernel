@@ -88,6 +88,7 @@ void GenericPageMap<Traits>::enter_boot_large(paddr_t phys_base,
   paddr_t addr = phys_base;
 
   if constexpr (std::size(Traits::PAGE_SIZES) == 1) {
+    // This MMU does not support Page Sizes > arch::PAGE_SIZE
     size_t pages = (end - addr) >> arch::PAGE_SHIFT;
     while (pages--) {
       vaddr_t virt_addr = virt_base + (addr - phys_base);
@@ -104,7 +105,7 @@ void GenericPageMap<Traits>::enter_boot_large(paddr_t phys_base,
     size_t chosen_level = 0;
     size_t chosen_size = arch::PAGE_SIZE;
 
-    for (size_t i = std::size(Traits::PAGE_SIZES); i-- > 0;) {
+    for (size_t i = Traits::max_page_size_idx() + 1; i-- > 0;) {
       size_t page_size = Traits::PAGE_SIZES[i];
 
       if (addr + page_size > end)
