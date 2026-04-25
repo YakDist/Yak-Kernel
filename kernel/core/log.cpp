@@ -17,6 +17,13 @@
 
 namespace yak {
 
+struct LogRecord {
+#if CONFIG_LOG_TIMESTAMPS
+  // TODO: implement log timestamps
+#endif
+  LogLevel level;
+};
+
 static bool printk_available = false;
 
 static constinit InterruptSpinLock early_printk_lock;
@@ -30,7 +37,7 @@ static void printk_early(const char *fmt, va_list args) {
   size_t written = npf_vsnprintf(early_buf, sizeof(early_buf) - 1, fmt, args);
   early_buf[sizeof(early_buf) - 1] = '\0';
 
-  early_puts(early_buf, written);
+  arch::early_puts(early_buf, written);
 }
 
 [[gnu::format(printf, 2, 0)]]

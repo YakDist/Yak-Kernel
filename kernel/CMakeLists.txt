@@ -133,5 +133,12 @@ yak_link(
 	PkgConfig::FREESTND_CXX_HDRS
 )
 
+yak_add_sources(
+	${VENDOR_DIR}/flanterm/src/flanterm.c
+	${VENDOR_DIR}/flanterm/src/flanterm_backends/fb.c
+)
+
+yak_add_includes(${VENDOR_DIR}/flanterm/src)
+
 install(TARGETS yak DESTINATION share/yak)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/yak.sym DESTINATION share/yak)

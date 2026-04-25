@@ -50,6 +50,8 @@ Thread bsp_idle_thread =
     Thread("idle_thread0", SchedPrio::Idle, &kernel_process, false);
 
 extern "C" void kernel_entry(void *bsp_idle_stack_top) {
+  arch::early_output_init();
+
   printk(LogLevel::Raw, "\e[0m");
 
 #if CONFIG_BOOT_BANNER

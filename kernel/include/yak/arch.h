@@ -5,6 +5,7 @@ struct Thread;
 }
 
 namespace yak::arch {
+void early_output_init();
 void early_init();
 void mem_init();
 void boot_finalize();

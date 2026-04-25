@@ -5,3 +5,9 @@ menu "Interrupts"
 		help
 			Especially helpful when running under virtualization
 endmenu
+
+menu "Boot"
+	config EARLYFB
+		bool "Enable Early Framebuffer output"
+		default n
+endmenu

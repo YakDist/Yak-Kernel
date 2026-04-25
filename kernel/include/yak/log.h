@@ -17,27 +17,17 @@ enum class LogLevel : uint8_t {
   Fail,
 };
 
-struct LogRecord {
-#if CONFIG_LOG_TIMESTAMPS
-  // TODO: implement log timestamps
-#endif
-  LogLevel level;
-};
-
+namespace arch {
 /**
  * @brief architecture-defined way to output characters during boot
  */
 void early_puts(const char *buf, size_t len);
+} // namespace arch
 
 void vprintk(LogLevel level, const char *fmt, va_list args);
 
 /**
  * @brief Implements logging for the kernel
- *
- * WARNING: During early boot, this function writes to a static temporary buffer
- * and immediatly flushes to the early console. During this timeframe, printk is
- * NOT thread-safe. Logs during an interrupt will be silently DROPPED if logging
- * was currently in process.
  *
  * @param level loglevel
  * @param fmt printf-compatible format string

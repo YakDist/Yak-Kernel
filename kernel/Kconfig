@@ -47,4 +47,8 @@ menu "General Options"
 	config BOOT_BANNER
 		bool "Print Boot Banner"
 		default y
+	
+	config LOG_TIMESTAMPS
+		bool "Timestamp logs"
+		default y
 endmenu

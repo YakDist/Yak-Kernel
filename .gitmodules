@@ -4,3 +4,6 @@
 [submodule "vendor/limine-protocol"]
 	path = vendor/limine-protocol
 	url = https://codeberg.org/Limine/limine-protocol
+[submodule "vendor/flanterm"]
+	path = vendor/flanterm
+	url = https://github.com/mintsuki/flanterm
