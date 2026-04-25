@@ -4,7 +4,6 @@ import sys
 import subprocess
 import os
 import re
-import time
 
 def main():
     sync_dir = sys.argv[1]
@@ -21,41 +20,42 @@ def main():
         # just run normally if no -MF was passed
         pass
 
-    result = subprocess.run(args)
+    ret = subprocess.run(args).returncode
 
 
     #print("dep file expected at: {}".format(dep_file))
 
-    start = time.perf_counter()
+    #start = time.perf_counter()
 
-    if result.returncode == 0:
-        if dep_file and os.path.exists(dep_file):
-            fixup_deps(dep_file, sync_dir)
+    if ret == 0 and dep_file and os.path.exists(dep_file):
+        fixup_deps(dep_file, sync_dir)
 
-    print(f"Executed in {time.perf_counter() - start:.3f}s")
+    #print(f"Executed in {time.perf_counter() - start:.3f}s")
 
-    sys.exit(result.returncode)
+    sys.exit(ret)
+
+_CONFIG_PATTERN = re.compile(rb'\bCONFIG_\w+')
 
 def scan_config_strings(filepath):
-    pattern = re.compile(r'\bCONFIG_\w+')
-    with open(filepath, 'r') as f:
+    with open(filepath, 'rb') as f:
         content = f.read()
-    return set(pattern.findall(content))
+    return {m.decode() for m in _CONFIG_PATTERN.findall(content)}
 
 def fixup_deps(dep_filepath, sync_dir):
     with open(dep_filepath, 'r') as f:
         content = f.read()
 
     # remove comments
-    content = '\n'.join(line for line in content.split('\n') if '#' not in line)
+    content = re.sub(r'#[^\n]*', '', content)
 
     content = content.replace('\\\n', ' ')
 
     tokens = content.split()
 
     filtered_tokens = [t for t in tokens if "yak/config.h" not in t]
+    depends_on_config = len(filtered_tokens) != len(tokens)
 
-    if not filtered_tokens:
+    if not filtered_tokens or not depends_on_config:
         return
 
     target = filtered_tokens[0]
@@ -75,11 +75,12 @@ def fixup_deps(dep_filepath, sync_dir):
         f.write(new_content)
 
 def get_sync_deps(sync_dir, all_options):
+    existing = {e.name for e in os.scandir(sync_dir)}
     deps = []
     for o in all_options:
-        p = sync_dir + os.sep + o[7:]
-        if os.path.exists(p):
-            deps.append(p)
+        name = o[7:]
+        if name in existing:
+            deps.append(sync_dir + os.sep + name)
         else:
             print(f"WARNING: {o} does not exist!")
     return deps
