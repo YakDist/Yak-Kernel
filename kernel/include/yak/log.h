@@ -7,9 +7,6 @@
 
 namespace yak {
 
-#define CONFIG_LOG_TIMESTAMPS 1
-#undef CONFIG_LOG_TIMESTAMPS
-
 enum class LogLevel : uint8_t {
   Raw = 0,
   Debug,

@@ -24,7 +24,7 @@ import textwrap
 # Zephyr doesn't use tristate symbols. They're supported here just to make the
 # script a bit more generic.
 from kconfiglib import Kconfig, split_expr, expr_value, expr_str, BOOL, \
-                       TRISTATE, TRI_TO_STR, AND, OR
+                       TRISTATE, TRI_TO_STR, AND, OR, _BOOL_TRISTATE
 
 
 def main():
@@ -122,6 +122,8 @@ def main():
     # Write the merged configuration and the C header
     print(kconf.write_config(args.config_out))
     print(kconf.write_autoconf(args.header_out))
+
+    print(sync_deps(kconf, args.kconfig_sync_dir))
 
     # Write the list of parsed Kconfig files to a file
     write_kconfig_filenames(kconf, args.kconfig_list_out)
@@ -276,6 +278,63 @@ def write_kconfig_filenames(kconf, kconfig_list_path):
                             for path in kconf.kconfig_filenames}):
             print(path, file=out)
 
+def dep_file_path(path, sym_name):
+    sym_path = path + os.sep + sym_name
+    return sym_path
+
+def touch_dep_file(path, sym_name):
+    sym_path = dep_file_path(path, sym_name)
+    sym_path_dir = os.path.dirname(sym_path)
+    if not os.path.exists(sym_path_dir):
+        os.makedirs(sym_path_dir, 0o755)
+    os.close(os.open(
+        sym_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644))
+
+def sync_deps(kconf, path):
+    if not os.path.exists(path):
+        os.mkdir(path, 0o755)
+
+    # Load old values from auto.conf, if any
+    kconf._load_old_vals(path)
+
+    for sym in kconf.unique_defined_syms:
+        val = sym.str_value
+
+        # n tristate values do not get written to auto.conf and autoconf.h,
+        # making a missing symbol logically equivalent to n
+
+        if sym.config_string != "":
+            # change in the logic to make this work for cmake:
+            # as None is logically equivalent to 'n',
+            # we can create a file if it does not exist yet in place, once.
+
+            if sym._old_val is None and sym.orig_type in _BOOL_TRISTATE and val == "n":
+                # No old value, new value n
+                # => logically the same
+                if os.path.exists(dep_file_path(path, sym.name)):
+                    #print(dep_file_path(path, sym.name))
+                    continue
+
+            if val == sym._old_val:
+                # New value matches old. No change.
+                continue
+
+        elif sym._old_val is None:
+            # The symbol wouldn't appear in autoconf.h (because
+            # _write_to_conf is false), and it wouldn't have appeared in
+            # autoconf.h previously either (because it didn't appear in
+            # auto.conf). No change.
+            continue
+
+        # 'sym' has a new value. Flag it.
+        touch_dep_file(path, sym.name)
+
+    # Remember the current values as the "new old" values.
+    #
+    # This call could go anywhere after the call to _load_old_vals(), but
+    # putting it last means _sync_deps() can be safely rerun if it fails
+    # before this point.
+    kconf._write_old_vals(path)
 
 def parse_args():
     parser = argparse.ArgumentParser(allow_abbrev=False)
@@ -304,6 +363,8 @@ def parse_args():
                         help="Output header file")
     parser.add_argument("kconfig_list_out",
                         help="Output file for list of parsed Kconfig files")
+    parser.add_argument("kconfig_sync_dir",
+                        help="Directory for sync_deps")
     parser.add_argument("configs_in",
                         nargs="+",
                         help="Input configuration fragments. Will be merged "

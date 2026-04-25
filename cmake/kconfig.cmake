@@ -24,6 +24,7 @@ set_ifndef(KCONFIG_SCRIPTS_DIR  ${PROJECT_ROOT}/scripts/kconfig)
 set(BUILD_DEFCONFIG             ${BUILD_CONFIG_DIR}/${BUILD_CONFIG}_defconfig)
 set(DOTCONFIG                   ${PROJECT_BINARY_DIR}/.config)
 set(PARSED_KCONFIG_SOURCES_TXT  ${PROJECT_BINARY_DIR}/kconfig/sources.txt)
+set(KCONFIG_SYNC_DIR            ${PROJECT_BINARY_DIR}/kconfig/sync_dir)
 
 if(CONF_FILE)
     string(CONFIGURE "${CONF_FILE}" CONF_FILE_EXPANDED)
@@ -209,6 +210,7 @@ execute_process(
     ${DOTCONFIG}
     ${AUTOCONF_H}
     ${PARSED_KCONFIG_SOURCES_TXT}
+    ${KCONFIG_SYNC_DIR}
     ${input_configs}
     WORKING_DIRECTORY ${PROJECT_ROOT}
     # The working directory is set to the app dir such that the user

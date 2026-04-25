@@ -31,6 +31,8 @@ add_custom_target(update_version_header ALL
 
 add_dependencies(yak update_version_header)
 
+target_enable_fixdep(yak)
+
 add_subdirectory(arch)
 add_subdirectory(core)
 add_subdirectory(io)

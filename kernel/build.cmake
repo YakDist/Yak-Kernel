@@ -31,6 +31,13 @@ function(yak_link)
 	target_link_libraries(yak PRIVATE ${ARGN})
 endfunction()
 
+function(target_enable_fixdep target)
+	set_target_properties(${target} PROPERTIES C_COMPILER_LAUNCHER
+    		"python3;${CMAKE_SOURCE_DIR}/scripts/fixdeps.py;${KCONFIG_SYNC_DIR}")
+	set_target_properties(${target} PROPERTIES CXX_COMPILER_LAUNCHER
+    		"python3;${CMAKE_SOURCE_DIR}/scripts/fixdeps.py;${KCONFIG_SYNC_DIR}")
+endfunction()
+
 function(target_enable_lto target)
     include(CheckIPOSupported)
     check_ipo_supported(RESULT supported)
