@@ -174,8 +174,9 @@ static vaddr_t map_pfndb_region(vaddr_t virt_base, size_t length, int nid) {
 
     while (addr < batch_end) {
       // allocate backing on the same NUMA node
-      paddr_t pa = expect(boot_memblock.allocate(page_size, page_size, nid),
-                          "could not allocate backing pfndb memory");
+      paddr_t pa =
+          expect(boot_memblock.allocate_zeroed(page_size, page_size, nid),
+                 "could not allocate backing pfndb memory");
 
       kmap.page_map().enter_boot(addr, pa, PROT_READ | PROT_WRITE,
                                  CACHE_DEFAULT, level);
