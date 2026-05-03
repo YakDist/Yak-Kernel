@@ -1,4 +1,5 @@
 orsource "arch/$ARCH/Kconfig"
+rsource "vm/Kconfig"
 
 menu "Build options"
 	config LTO

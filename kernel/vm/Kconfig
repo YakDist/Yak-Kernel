@@ -1,0 +1,12 @@
+menu "Memory"
+
+config FREELIST_ORDERS
+	int "Maximum buddy allocator order"
+	range 4 19
+	default 11
+	help
+		The number of orders in the buddy allocator's free lists.
+
+		The maximum physically-contiguous allocation size will be PAGE_SIZE * (1 << (FREELIST_ORDERS - 1))
+
+endmenu

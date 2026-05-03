@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <optional>
+#include <yak/config.h>
 #include <yak/fixed_arena.h>
 #include <yak/math.h>
 #include <yak/spinlock.h>
@@ -12,11 +13,9 @@
 
 namespace yak {
 
-#define FREELIST_ORDERS 10
-
 struct MemoryDomain {
   IplSpinlock lock;
-  PageList free_list[FREELIST_ORDERS];
+  PageList free_list[CONFIG_FREELIST_ORDERS];
 
   std::optional<Page *> allocate(unsigned int desired_order);
   void free(Page *page);

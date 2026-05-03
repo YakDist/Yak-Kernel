@@ -1,3 +1,4 @@
+#include "yak/util.h"
 #include <cstddef>
 #include <yak/arch.h>
 #include <yak/config.h>
@@ -95,6 +96,23 @@ extern "C" void kernel_entry(void *bsp_idle_stack_top) {
 
   // XXX: rather run this on the kmain thread!
   init_engine.run();
+
+  auto buf_pg = expect(pmm_alloc(2, PageUse::Wired, 0), "test");
+  Page **buf_allocs = (Page **) buf_pg->to_va_ptr();
+  size_t n_allocs = (1 << (2 + 12)) / sizeof(Page *);
+  pr_debug("buf_allocs:%p\n", buf_allocs);
+  pr_debug("n_allocs:%zu\n", n_allocs);
+
+  for (size_t i = 0; i < n_allocs; i++) {
+    buf_allocs[i] = expect(pmm_alloc(1, PageUse::Wired, ALLOC_ZERO), "oom :(");
+  }
+
+  for (size_t i = 0; i < n_allocs; i++) {
+    buf_allocs[i]->release();
+    buf_allocs[i] = nullptr;
+  }
+
+  buf_pg->release();
 
   bsp_cpu_data.sched->idle_loop();
 }

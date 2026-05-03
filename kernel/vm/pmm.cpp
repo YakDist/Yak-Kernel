@@ -51,7 +51,7 @@ void pmm_add_region(paddr_t base, paddr_t end) {
 
   for (size_t block_base = base; block_base < end;) {
     unsigned int max_order = 0;
-    while (max_order < FREELIST_ORDERS - 1) {
+    while (max_order < CONFIG_FREELIST_ORDERS - 1) {
       unsigned int next = max_order + 1;
       size_t size = pmm_block_size(next);
       if (block_base + size > end || !is_aligned_pow2(block_base, size))
@@ -60,25 +60,20 @@ void pmm_add_region(paddr_t base, paddr_t end) {
     }
 
     size_t block_size = pmm_block_size(max_order);
-    size_t block_pages = block_size / arch::PAGE_SIZE;
 
     assert(block_base + block_size <= end);
     assert(is_aligned_pow2(block_base, block_size));
-    assert(max_order == FREELIST_ORDERS - 1 ||
+    assert(max_order == CONFIG_FREELIST_ORDERS - 1 ||
            block_base + (block_size * 2) > end ||
            !is_aligned_pow2(block_base, block_size * 2));
 
     Page *block_page = &arch::p2page(block_base);
-
-    for (size_t i = 0; i < block_pages; i++) {
-      Page &page = block_page[i];
-      page.domain = domain.id;
-      page.usage = PageUse::Free;
-      page.pfn = (block_base >> arch::PAGE_SHIFT) + i;
-      page.refcnt = 0;
-      page.order = max_order;
-      page.block_order = max_order;
-    }
+    new (block_page) Page();
+    block_page->domain = domain.id;
+    block_page->order = max_order;
+    block_page->block_order = max_order;
+    if (max_order != 0)
+      block_page->buddy_needs_lazy_init = true;
 
     mdom.free_list[max_order].push_back(block_page);
 
@@ -90,7 +85,7 @@ void pmm_add_region(paddr_t base, paddr_t end) {
 }
 
 std::optional<Page *> MemoryDomain::allocate(unsigned int desired_order) {
-  assert(desired_order < FREELIST_ORDERS);
+  assert(desired_order < CONFIG_FREELIST_ORDERS);
 
   if (!free_list[desired_order].empty()) {
     Page *page = free_list[desired_order].pop_front();
@@ -99,21 +94,36 @@ std::optional<Page *> MemoryDomain::allocate(unsigned int desired_order) {
     return page;
   }
 
+  // Find the next-highest non-empty free list
+  // TODO: this could just use a bitmask
   unsigned int order = desired_order;
-  while (++order < FREELIST_ORDERS && free_list[order].empty()) {}
+  while (++order < CONFIG_FREELIST_ORDERS && free_list[order].empty()) {}
 
-  if (order >= FREELIST_ORDERS) {
+  if (order >= CONFIG_FREELIST_ORDERS) {
     return std::nullopt;
   }
 
   Page *page = free_list[order].pop_front();
-  Page *buddy = page + (1 << order) / 2;
 
   while (order != desired_order) {
     order -= 1;
+    Page *buddy = page + (1 << order); // upper half at new order
+
+    if (page->buddy_needs_lazy_init) {
+      new (buddy) Page();
+      buddy->domain = page->domain;
+      buddy->block_order = page->block_order;
+      if (order > 0) {
+        page->buddy_needs_lazy_init = true;  // lower half still needs it
+        buddy->buddy_needs_lazy_init = true; // upper half needs it too
+      } else {
+        page->buddy_needs_lazy_init = false;
+        buddy->buddy_needs_lazy_init = false;
+      }
+    }
+
     buddy->order = order;
     free_list[order].push_back(buddy); // put upper half on free list
-    buddy = page + (1 << order) / 2;   // recalculate buddy for new order
   }
 
   assert(page->usage == PageUse::Free);
@@ -125,11 +135,15 @@ std::optional<Page *> MemoryDomain::allocate(unsigned int desired_order) {
 
 void MemoryDomain::free(Page *page) {
   while (page->order < page->block_order) {
+    Page *buddy_page = page->buddy(page->order);
+
+#if 0
     auto block_size = pmm_block_size(page->order);
     paddr_t page_addr = page->to_pa();
     paddr_t buddy_addr = page_addr ^ block_size;
 
     Page *buddy_page = &arch::p2page(buddy_addr);
+#endif
 
 #if 0
     // The buddy page is either +block_size or -block_size away
