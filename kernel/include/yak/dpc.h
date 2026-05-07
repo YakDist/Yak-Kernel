@@ -32,9 +32,9 @@ public:
   static void enqueue(Dpc *dpc, void *context);
 
 private:
-  // This needs to be an InterruptSpinLock, as DPCs have to be enqueueable from
-  // interrupt context
-  InterruptSpinLock queue_lock;
+  // Additionally, interrupts need to be disabled, as DPCs have to be
+  // enqueueable from any interrupt context
+  Spinlock queue_lock;
   DpcList queue;
 };
 } // namespace yak

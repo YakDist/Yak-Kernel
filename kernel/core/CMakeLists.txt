@@ -9,4 +9,6 @@ yak_add_sources(
 	cpudata.cpp
 	dpc.cpp
 	softint.cpp
+	wait.cpp
+	kobject.cpp
 )

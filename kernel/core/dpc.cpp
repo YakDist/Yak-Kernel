@@ -2,6 +2,8 @@
 #include <frg/mutex.hpp>
 #include <yak/cpudata.h>
 #include <yak/dpc.h>
+#include <yak/interrupt-guard.h>
+#include <yak/ipl-guard.h>
 #include <yak/ipl.h>
 #include <yak/panic.h>
 #include <yak/softint.h>
@@ -14,8 +16,11 @@ void Dpc::init(DpcCallback callback) {
 }
 
 void DpcQueue::enqueue(Dpc *dpc, void *context) {
+  InterruptGuard ints{};
+
   auto dpc_queue = CpuData::Current()->dpc_queue.get();
   auto guard = frg::guard(&dpc_queue->queue_lock);
+
   // already enqueued
   if (dpc->enqueued_to_ != nullptr)
     return;
@@ -29,13 +34,15 @@ void DpcQueue::enqueue(Dpc *dpc, void *context) {
 }
 
 void Dpc::dequeue() {
+  InterruptGuard ints{};
+
   auto q = enqueued_to_;
 
   if (q == nullptr)
     return;
 
   auto guard = frg::guard(&q->queue_lock);
-  q->queue.erase(this);
+  q->queue.erase(q->queue.iterator_to(this));
 
   enqueued_to_ = nullptr;
 }
@@ -43,7 +50,8 @@ void Dpc::dequeue() {
 void DpcQueue::drain() {
   assert(iplget() == Ipl::dispatch);
 
-  while (true) {
+  do {
+    InterruptGuard ints{};
     auto guard = frg::guard(&queue_lock);
     if (queue.empty()) {
       return;
@@ -55,8 +63,10 @@ void DpcQueue::drain() {
     captured_dpc->enqueued_to_ = nullptr;
 
     guard.unlock();
+    ints.unlock();
+
     captured_dpc->callback_(captured_dpc, captured_context);
-  }
+  } while (true);
 }
 
 } // namespace yak

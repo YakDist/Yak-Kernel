@@ -1,6 +1,7 @@
 #include <array>
 #include <assert.h>
 #include <yak/arch-intr.h>
+#include <yak/interrupt-guard.h>
 #include <yak/panic.h>
 #include <yak/softint.h>
 
@@ -25,19 +26,20 @@ constinit std::array<SoftintHandler, std::to_underlying(Ipl::high) - 1>
 
           iplr(Ipl::dispatch);
 
+          // softint_dispatch disabled interrupts
           arch::enable_interrupts();
 
           cpu->dpc_queue->drain();
 
           cpu->sched->commit_reschedule();
 
+          // restore previous state
           arch::disable_interrupts();
         },
 };
 
 void softint_dispatch(Ipl ipl) {
-  bool state = arch::interrupt_state();
-  arch::disable_interrupts();
+  InterruptGuard ints{};
 
   auto cpu = CpuData::Current();
   uint32_t pending;
@@ -52,9 +54,6 @@ void softint_dispatch(Ipl ipl) {
   }
 
   iplx(ipl);
-
-  if (state)
-    arch::enable_interrupts();
 }
 
 void softint_issue(Ipl ipl) {

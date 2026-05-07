@@ -174,9 +174,8 @@ static vaddr_t map_pfndb_region(vaddr_t virt_base, size_t length, int nid) {
 
     while (addr < batch_end) {
       // allocate backing on the same NUMA node
-      paddr_t pa =
-          expect(boot_memblock.allocate(page_size, page_size, nid),
-                 "could not allocate backing pfndb memory");
+      paddr_t pa = expect(boot_memblock.allocate(page_size, page_size, nid),
+                          "could not allocate backing pfndb memory");
 
       kmap.page_map().enter_boot(addr, pa, PROT_READ | PROT_WRITE,
                                  CACHE_DEFAULT, level);
@@ -195,10 +194,10 @@ template <typename Traits> static void map_pfndb() {
   vaddr_t last_mapped_end = arch::PFNDB_BASE;
 
   for (auto &entry : boot_memblock.memory.view()) {
-    pr_debug("physical memory: %#016lx - %#016lx node id %d\n", entry.base,
-             entry.end(), entry.node_id);
+    pr_debug("physical memory: %#016lx - %#016lx node id %d\n", entry.base_,
+             entry.end(), entry.node_id_);
 
-    size_t start_pfn = entry.base >> arch::PAGE_SHIFT;
+    size_t start_pfn = entry.base_ >> arch::PAGE_SHIFT;
     size_t end_pfn = entry.end() >> arch::PAGE_SHIFT;
 
     vaddr_t region_start =
@@ -214,7 +213,7 @@ template <typename Traits> static void map_pfndb() {
     size_t map_size = region_end - map_start;
 
     last_mapped_end =
-        map_pfndb_region<Traits>(map_start, map_size, entry.node_id);
+        map_pfndb_region<Traits>(map_start, map_size, entry.node_id_);
   }
 
   pr_info("mapped pfndb\n");

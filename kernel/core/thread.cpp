@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <assert.h>
+#include <span>
 #include <string.h>
 #include <yak/cpudata.h>
 #include <yak/ipl.h>
@@ -6,17 +8,19 @@
 #include <yak/panic.h>
 #include <yak/sched.h>
 #include <yak/thread.h>
+#include <yak/waitblock.h>
 
 namespace yak {
 Thread::Thread(frg::string_view name, SchedPrio initial_priority,
                Process *parent_process, bool user_thread)
-    : state{ThreadState::Undefined},
-      priority{initial_priority},
-      parent_process{parent_process},
-      effective_process{parent_process},
-      is_user{user_thread} {
-  auto name_copy_len = std::min(name.size() - 1, THREAD_MAX_NAME_LEN - 1);
-  memcpy(this->name, name.data(), name_copy_len);
+    : state_{ThreadState::Undefined},
+      priority_{initial_priority},
+      parent_process_{parent_process},
+      effective_process_{parent_process},
+      is_user_{user_thread},
+      wait_phase_{WaitPhase::None} {
+  auto name_copy_len = std::min(name.size(), THREAD_MAX_NAME_LEN - 1);
+  memcpy(name_, name.data(), name_copy_len);
 }
 
 Thread *Thread::Current() {
@@ -28,14 +32,14 @@ void Thread::exit() {
   iplr(Ipl::dispatch);
 
   // XXX: switch to kernel map?
-  if (is_user)
+  if (is_user_)
     panic("switch");
 
-  lock.lock_noipl();
+  lock_.lock();
 
   pr_warn("add a thread reaper!\n");
 
-  state = ThreadState::Terminating;
+  state_ = ThreadState::Terminating;
 
   Scheduler::for_this_cpu().yield(this);
   __builtin_unreachable();
@@ -43,6 +47,29 @@ void Thread::exit() {
 
 extern "C" [[noreturn]] void __thread_exit_trampoline() {
   Thread::Current()->exit();
+}
+
+void Thread::unwait(int wait_status) {
+  assert(lock_.is_locked());
+  assert(state_ == ThreadState::Blocked ||
+         wait_phase_ == WaitPhase::InProgress);
+
+  // If we did not commit to the wait yet, abort
+  if (wait_phase_ == WaitPhase::InProgress)
+    wait_phase_ = WaitPhase::Aborted;
+
+  wait_status_ = wait_status;
+
+  // Set all wait blocks to unwaited
+  for (auto &wb : wait_blocks_)
+    wb.flags_ |= WB_UNWAITED;
+
+  timeout_waitblock_.flags_ |= WB_UNWAITED;
+
+  // Unblock the thread
+  if (state_ == ThreadState::Blocked) {
+    Scheduler::for_this_cpu().resume_locked(this);
+  }
 }
 
 } // namespace yak

@@ -9,6 +9,7 @@
 #include <yak/arch-mm.h>
 #include <yak/arch-page.h>
 #include <yak/cpudata.h>
+#include <yak/ipl-guard.h>
 #include <yak/log.h>
 #include <yak/math.h>
 #include <yak/numa.h>
@@ -180,6 +181,7 @@ void MemoryDomain::free(Page *page) {
 std::optional<Page *> pmm_alloc(unsigned int order, PageUse use,
                                 OptionBits flags) {
   auto *dom = &Domain::from_id(CPUDATA_LOAD(numa_domain)).memory;
+  IplGuard ipl{Ipl::dispatch};
   auto guard = frg::guard(&dom->lock);
   auto page_res = dom->allocate(order);
   auto page = expect(page_res, "handle pmm oom!");
@@ -196,6 +198,8 @@ std::optional<Page *> pmm_alloc(unsigned int order, PageUse use,
 
 void Page::release() {
   auto &dom = Domain::from_id(domain).memory;
+
+  IplGuard ipl{Ipl::dispatch};
   auto guard = frg::guard(&dom.lock);
 
   if (refcnt-- == 1) {

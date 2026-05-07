@@ -24,12 +24,12 @@ __x86_sched_switch:
 
 	# preserve next pointer across call into C
 	# the ABI mandates that r15 be saved
-	#
+	mov %rsi, %r15
+
 	# finalize signales to other code that we have
 	# switched of the 'current' stack and unlocks current
 	# 
-	# XXX: this could be assembly too, no?
-	mov %rsi, %r15
+	# XXX: this could (should?) be assembly too, no?
 	call sched_finalize_switch
 
 	 # restore state from next

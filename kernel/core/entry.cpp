@@ -1,5 +1,8 @@
+#include "yak/kobject.h"
 #include "yak/util.h"
+#include "yak/wait.h"
 #include <cstddef>
+#include <span>
 #include <yak/arch.h>
 #include <yak/config.h>
 #include <yak/cpudata.h>
@@ -68,7 +71,7 @@ extern "C" void kernel_entry(void *bsp_idle_stack_top) {
 
   arch::early_init();
 
-  bsp_idle_thread.kernel_stack_top = bsp_idle_stack_top;
+  bsp_idle_thread.kernel_stack_top_ = bsp_idle_stack_top;
   Scheduler::init(&bsp_cpu_data, &bsp_idle_thread);
 
   // We now have defined thread-state;
@@ -82,17 +85,44 @@ extern "C" void kernel_entry(void *bsp_idle_stack_top) {
 
   arch::post_pmm();
 
-  auto t = Thread("test", SchedPrio::RealTime, &kernel_process, false);
-  const size_t size = 4096;
-  [[gnu::aligned(16)]]
-  static char buf[size];
-  t.init_context((void *) &buf[size],
-                 [](void *, void *) {
-                   pr_debug("enter!\n");
-                   ;
-                 },
-                 nullptr, nullptr);
-  Scheduler::for_this_cpu().resume(&t);
+  KObject obj = KObject(1, KObjectType::Sync);
+
+  auto pg_stack1 = expect(pmm_alloc(0, PageUse::Wired, ALLOC_ZERO), "oom");
+  auto pg_stack2 = expect(pmm_alloc(0, PageUse::Wired, ALLOC_ZERO), "oom");
+
+  auto t1 = Thread("test1", SchedPrio::RealTime, &kernel_process, false);
+  auto t2 = Thread("test2", SchedPrio::RealTime, &kernel_process, false);
+
+  t1.init_context((void *) (pg_stack1->to_va() + 4096),
+                  [](void *obj, void *n) {
+                    pr_debug("enter t@%zu! (%p)\n", (uint64_t) n, obj);
+                    auto &o = *(KObject *) obj;
+                    KObject *objs[] = {&o};
+                    auto res =
+                        wait_for_many(objs, WaitMode::Block, WaitType::Any);
+                    pr_debug("acq ok? %s\n", res.has_value() ? "yes" : "no");
+                    o.lock_.lock();
+                    o.signal_locked(false);
+                    o.signal_count_ = 1;
+                    o.lock_.unlock();
+                  },
+                  &obj, (void *) 1);
+
+  t2.init_context((void *) (pg_stack2->to_va() + 4096),
+                  [](void *obj, void *n) {
+                    pr_debug("enter t@%zu! (%p)\n", (uint64_t) n, obj);
+                    auto &o = *(KObject *) obj;
+                    auto res = wait_for_single(o, WaitMode::Block);
+                    pr_debug("acq ok? %s\n", res.has_value() ? "yes" : "no");
+                    o.lock_.lock();
+                    o.signal_locked(false);
+                    o.signal_count_ = 1;
+                    o.lock_.unlock();
+                  },
+                  &obj, (void *) 2);
+
+  Scheduler::for_this_cpu().resume(&t1);
+  Scheduler::for_this_cpu().resume(&t2);
 
   // XXX: rather run this on the kmain thread!
   init_engine.run();
@@ -113,6 +143,11 @@ extern "C" void kernel_entry(void *bsp_idle_stack_top) {
   }
 
   buf_pg->release();
+
+  auto fib = [](this auto self, int n) -> int {
+    return n <= 1 ? n : self(n - 1) + self(n - 2);
+  };
+  pr_debug("deduced \"this\" test: fib(10)=%d\n", fib(10));
 
   bsp_cpu_data.sched->idle_loop();
 }

@@ -12,6 +12,7 @@
 #include <cstdarg>
 #include <cstring>
 #include <frg/mutex.hpp>
+#include <yak/interrupt-guard.h>
 #include <yak/log.h>
 #include <yak/spinlock.h>
 
@@ -26,12 +27,13 @@ struct LogRecord {
 
 static bool printk_available = false;
 
-static constinit InterruptSpinLock early_printk_lock;
+static constinit Spinlock early_printk_lock;
 
 char early_buf[2048];
 
 [[gnu::format(printf, 1, 0)]]
 static void printk_early(const char *fmt, va_list args) {
+  InterruptGuard interrupts{};
   auto guard = frg::guard(&early_printk_lock);
 
   size_t written = npf_vsnprintf(early_buf, sizeof(early_buf) - 1, fmt, args);

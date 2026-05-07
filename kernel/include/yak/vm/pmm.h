@@ -14,7 +14,7 @@
 namespace yak {
 
 struct MemoryDomain {
-  IplSpinlock lock;
+  Spinlock lock;
   PageList free_list[CONFIG_FREELIST_ORDERS];
 
   std::optional<Page *> allocate(unsigned int desired_order);

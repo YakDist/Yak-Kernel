@@ -3,6 +3,7 @@
 #include <x86_64/tss.h>
 #include <yak/arch-intr.h>
 #include <yak/cpudata.h>
+#include <yak/interrupt-guard.h>
 #include <yak/percpu.h>
 #include <yak/vm/address.h>
 #include <yak/vm/stack.h>
@@ -128,8 +129,7 @@ void gdt_reload() {
 }
 
 static inline void tss_reload() {
-  auto state = interrupt_state();
-  disable_interrupts();
+  InterruptGuard cli{};
 
   vaddr_t tss_addr = (vaddr_t) PERCPU_PTR(pcpu_tss);
 
@@ -145,9 +145,6 @@ static inline void tss_reload() {
   *percpu_tss_entry() = tss_entry;
 
   asm volatile("ltr %0" ::"rm"((uint16_t) GDT_SEL_TSS) : "memory");
-
-  if (state)
-    enable_interrupts();
 }
 
 void tss_cpu_init() {

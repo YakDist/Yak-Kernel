@@ -1,6 +1,7 @@
 #include <cstddef>
 #include <frg/mutex.hpp>
 #include <yak/bitset.h>
+#include <yak/ipl-guard.h>
 #include <yak/ps.h>
 
 namespace yak {
@@ -35,6 +36,7 @@ Process::Process(Process *parent)
   pid = allocate_pid();
 
   if (parent != nullptr) {
+    IplGuard ipl{Ipl::dispatch};
     auto guard = frg::guard(&parent->childlist_lock);
     parent->childlist.push_back(this);
   }

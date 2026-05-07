@@ -8,5 +8,4 @@
 
 #define VMEM_QCACHE_MAX 16
 
-struct VMem {
-};
+struct VMem {};

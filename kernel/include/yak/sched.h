@@ -5,6 +5,8 @@
 #include <yak/math.h>
 #include <yak/sched_prio.h>
 #include <yak/thread.h>
+#include <yak/types.h>
+#include <yak/waitblock.h>
 
 namespace yak {
 
@@ -13,14 +15,14 @@ struct RunQueue {
   ThreadQueue queues[sched_prio::PRIO_COUNT];
 
   inline void insert(Thread *thread) {
-    auto prio = std::to_underlying(thread->priority);
+    auto prio = std::to_underlying(thread->priority_);
     auto &queue = queues[prio];
     queue.push_back(thread);
     ready_mask |= (1ULL << prio);
   }
 
   inline void remove(Thread *thread) {
-    auto prio = std::to_underlying(thread->priority);
+    auto prio = std::to_underlying(thread->priority_);
     auto &queue = queues[prio];
     queue.erase(thread);
     if (queue.empty()) {
@@ -78,8 +80,12 @@ public:
   [[noreturn]]
   void idle_loop();
 
+  static inline bool is_idle() {
+    return for_this_cpu().idle_thread_ == Thread::Current();
+  }
+
 private:
-  IplSpinlock lock_;
+  Spinlock lock_;
 
   RunQueue rr_queue_;
   ThreadQueue idle_queue_;

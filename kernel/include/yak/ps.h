@@ -25,7 +25,7 @@ public:
 
   pid_t pid;
 
-  IplSpinlock childlist_lock;
+  Spinlock childlist_lock;
   frg::default_list_hook<Process> childlist_hook;
 
   using ProcessList = frg::intrusive_list<

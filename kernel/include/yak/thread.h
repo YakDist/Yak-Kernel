@@ -2,9 +2,11 @@
 
 #include <frg/list.hpp>
 #include <frg/string.hpp>
+#include <span>
 #include <yak/arch-pcb.h>
 #include <yak/sched_prio.h>
 #include <yak/spinlock.h>
+#include <yak/waitblock.h>
 
 namespace yak {
 enum class ThreadState {
@@ -34,7 +36,7 @@ enum class WaitPhase {
   // Thread currently setting up wait machinery
   InProgress,
   // Thread comitted to waiting
-  Comitted,
+  Committed,
   // The wait was aborted whilst InProgress
   Aborted,
 };
@@ -43,30 +45,40 @@ class Process;
 struct CpuData;
 
 static constexpr size_t THREAD_MAX_NAME_LEN = 32;
+static constexpr size_t THREAD_INLINE_WAIT_BLOCKS = 4;
 
 using ThreadEntryFn = void (*)(void *, void *);
 
 struct Thread {
   arch::ThreadPcb md;
 
-  IplSpinlock lock;
+  Spinlock lock_;
 
-  ThreadState state;
-  SchedPrio priority;
+  ThreadState state_;
+  SchedPrio priority_;
 
-  Process *parent_process;
-  Process *effective_process;
+  Process *parent_process_;
+  Process *effective_process_;
 
-  CpuData *affinity_cpu = nullptr;
-  CpuData *last_cpu = nullptr;
+  CpuData *affinity_cpu_ = nullptr;
+  CpuData *last_cpu_ = nullptr;
 
-  void *kernel_stack_top = nullptr;
+  void *kernel_stack_top_ = nullptr;
 
-  std::atomic<bool> is_switching;
+  std::atomic<bool> is_switching_;
 
-  bool is_user;
+  bool is_user_;
 
-  char name[THREAD_MAX_NAME_LEN];
+  char name_[THREAD_MAX_NAME_LEN];
+
+  WaitBlock inline_waitblocks_[THREAD_INLINE_WAIT_BLOCKS];
+  WaitBlock timeout_waitblock_;
+
+  WaitPhase wait_phase_;
+  /// if negative, wait_status is an error of kind -Status
+  /// if positive, wait_status was set to the waitblocks status field
+  int wait_status_;
+  std::span<WaitBlock> wait_blocks_;
 
   frg::default_list_hook<Thread> list_hook;
   frg::default_list_hook<Thread> queue_hook;
@@ -81,6 +93,8 @@ struct Thread {
 
   [[noreturn]]
   void exit();
+
+  void unwait(int wait_status);
 };
 
 using ThreadList = frg::intrusive_list<

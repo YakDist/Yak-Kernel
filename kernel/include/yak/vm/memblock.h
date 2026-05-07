@@ -10,32 +10,32 @@ namespace yak {
 constexpr int MEMBLOCK_MAX_REGIONS = 128;
 
 struct MemblockRegion {
-  paddr_t base = 0;
-  size_t size = 0;
-  int node_id = -1;
+  paddr_t base_ = 0;
+  size_t size_ = 0;
+  int node_id_ = -1;
 
   paddr_t end() const {
-    return base + size;
+    return base_ + size_;
   }
 };
 
 struct MemblockType {
   friend struct Memblock;
 
-  size_t total_size = 0;
-  int count = 0;
-  MemblockRegion regions[MEMBLOCK_MAX_REGIONS];
+  size_t total_size_ = 0;
+  int count_ = 0;
+  MemblockRegion regions_[MEMBLOCK_MAX_REGIONS];
 
   std::span<MemblockRegion> view() {
-    return {regions, static_cast<size_t>(count)};
+    return {regions_, static_cast<size_t>(count_)};
   }
 
   std::span<const MemblockRegion> view() const {
-    return {regions, static_cast<size_t>(count)};
+    return {regions_, static_cast<size_t>(count_)};
   }
 
   bool is_full() const {
-    return count >= MEMBLOCK_MAX_REGIONS;
+    return count_ >= MEMBLOCK_MAX_REGIONS;
   }
 
   void add(paddr_t base, size_t size, int nid);

@@ -7,6 +7,7 @@
 #include <x86_64/msr.h>
 #include <yak/arch-intr.h>
 #include <yak/arch-mm.h>
+#include <yak/interrupt-guard.h>
 #include <yak/panic.h>
 #include <yak/vm/map.h>
 
@@ -88,16 +89,11 @@ void eoi() {
 
 void send_ipi(uint32_t lapic_id, uint8_t vector) {
   if (use_x2apic) {
-
   } else {
-    auto state = interrupt_state();
-    disable_interrupts();
+    InterruptGuard ints{};
 
     xapic_write(LAPIC_REG_ICR1, lapic_id << 24);
     xapic_write(LAPIC_REG_ICR0, vector);
-
-    if (state)
-      enable_interrupts();
   }
 }
 
