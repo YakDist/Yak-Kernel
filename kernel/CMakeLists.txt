@@ -1,5 +1,6 @@
 add_executable(yak)
 
+include(CheckCXXCompilerFlag)
 include(symbols.cmake)
 include(build.cmake)
 
@@ -77,7 +78,12 @@ if (CONFIG_UBSAN)
 endif()
 
 if (CONFIG_BUILD_TYPE_DEBUG)
-	yak_compile_options(-O0)
+	check_cxx_compiler_flag("-fextend-variable-liveness" HAS_EXTEND_VARIABLE_LIVENESS)
+	if (HAS_EXTEND_VARIABLE_LIVENESS)
+		yak_compile_options(-Og -fextend-variable-liveness)
+	else()
+		yak_compile_options(-O0)
+	endif()
 elseif(CONFIG_BUILD_TYPE_RELEASE)
 	yak_compile_options(-O2)
 elseif(CONFIG_BUILD_TYPE_MINSIZEREL)
