@@ -1,7 +1,7 @@
 #include <cstddef>
 #include <yak/log.h>
 
-namespace yak {
+namespace yak::arch {
 
 static void sbi_putc(const char c) {
   register long a0 asm("a0") = c;
@@ -9,6 +9,8 @@ static void sbi_putc(const char c) {
   register long a7 asm("a7") = 0x01;
   asm volatile("ecall" : "+r"(a0) : "r"(a6), "r"(a7) : "memory");
 }
+
+void early_output_init() {}
 
 void early_puts(const char *buf, size_t len) {
   for (size_t i = 0; i < len; i++) {
