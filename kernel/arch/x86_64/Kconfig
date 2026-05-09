@@ -11,3 +11,17 @@ menu "Boot"
 		bool "Enable Early Framebuffer output"
 		default n
 endmenu
+
+config ARCH_HAS_ACPI
+	bool
+	default y
+
+config ARCH_SUPPORTS_GENERIC_PAGEMAP
+	bool
+	default y
+
+config X86
+	bool
+	select ACPI_ENABLED
+	select USE_GENERIC_PAGEMAP
+	default y

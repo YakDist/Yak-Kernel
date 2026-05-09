@@ -21,7 +21,7 @@
 
 #define pr_fmt(fmt) "generic-pagemap: " fmt
 
-#include <assert.h>
+#include <yak/assert.h>
 #include <iterator>
 #include <yak/arch-mm.h>
 #include <yak/arch-pagemap.h>

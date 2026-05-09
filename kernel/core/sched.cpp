@@ -19,10 +19,10 @@ i'll implement everything very primitively. interactivity and other features
 will follow later on :^)
 */
 
-#include <assert.h>
 #include <frg/mutex.hpp>
 #include <yak/arch-intr.h>
 #include <yak/arch.h>
+#include <yak/assert.h>
 #include <yak/cpudata.h>
 #include <yak/ipl-guard.h>
 #include <yak/ipl.h>
@@ -258,6 +258,7 @@ void Scheduler::yield(Thread *current) {
   }
 }
 
+#if !YAK_HOSTED_MODE
 [[noreturn]]
 void Scheduler::idle_loop() {
   iplx(Ipl::passive);
@@ -279,5 +280,6 @@ void Scheduler::idle_loop() {
 #endif
   }
 }
+#endif
 
 } // namespace yak

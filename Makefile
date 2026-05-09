@@ -24,8 +24,18 @@ local_build: ## Build local CMake build
 local_setup: ## Setup local CMake build (With compile commands)
 	cmake -S . -B build -G Ninja \
 		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+		-DCMAKE_COLOR_DIAGNOSTICS=ON \
 		-DYAK_ARCH=x86_64 \
 		-DYAK_TOOLCHAIN=clang
+
+local_setup_hosted: ## Setup local CMake build (As a hosted kernel)
+	cmake -S . -B build -G Ninja \
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+		-DCMAKE_COLOR_DIAGNOSTICS=ON \
+		-DYAK_TOOLCHAIN=clang \
+		-DYAK_ARCH=x86_64 \
+		-DYAK_HOSTED_MODE=ON \
+		-DYAK_HOSTED_SYSTEM=linux
 
 format: ## Run clang-format on every file under kernel/
 	find kernel -iname '*.h' \

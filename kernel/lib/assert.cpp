@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <yak/assert.h>
 #include <nanoprintf.h>
 #include <yak/panic.h>
 

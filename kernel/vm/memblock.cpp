@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <assert.h>
+#include <yak/assert.h>
 #include <cstring>
 #include <span>
 #include <string.h>

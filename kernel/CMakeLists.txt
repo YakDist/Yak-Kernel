@@ -6,8 +6,10 @@ include(build.cmake)
 
 find_package(PkgConfig REQUIRED)
 
+if (NOT YAK_HOSTED_MODE)
 pkg_check_modules(FREESTND_C_HDRS REQUIRED IMPORTED_TARGET freestnd-c-hdrs-x86_64)
 pkg_check_modules(FREESTND_CXX_HDRS REQUIRED IMPORTED_TARGET freestnd-cxx-hdrs-x86_64)
+endif()
 pkg_check_modules(FRIGG REQUIRED IMPORTED_TARGET frigg)
 
 yak_add_includes(
@@ -40,10 +42,15 @@ add_subdirectory(io)
 add_subdirectory(vm)
 add_subdirectory(lib)
 
+if(YAK_HOSTED_MODE)
+	yak_add_includes(arch/hosted/${YAK_HOSTED_SYSTEM}/include)
+else()
+	yak_add_includes(arch/${YAK_ARCH}/include)
+endif()
+
 yak_add_includes(
 	include
 	arch
-	arch/${YAK_ARCH}/include
 
 	# Contains version.h
 	${CMAKE_BINARY_DIR}/generated/include
@@ -51,20 +58,27 @@ yak_add_includes(
 	${CMAKE_BINARY_DIR}/kconfig/include/generated
 )
 
+if (YAK_HOSTED_MODE) 
+yak_defines(
+	YAK_HOSTED_MODE=1
+	YAK_HOSTED_SYSTEM=${YAK_HOSTED_SYSTEM}
+)
+endif()
+
 yak_defines(
 	__KERNEL__
 	ARCH_STR="${YAK_ARCH}"
 	${YAK_ARCH}
 )
 
-if (CONFIG_STACK_CANARIES)
+if (NOT CONFIG_STACK_CANARIES)
+	yak_compile_options(-fno-stack-protector)
+elseif(NOT YAK_HOSTED_MODE)
 	yak_compile_options(
 	-fstack-protector-strong
 	-fstack-check
 	-mstack-protector-guard=global
 	)
-else()
-	yak_compile_options(-fno-stack-protector)
 endif()
 
 if (CONFIG_LTO)
@@ -97,10 +111,17 @@ yak_compile_options(
 	-fmacro-prefix-map=${PROJECT_ROOT_NORMALIZED}=./
 )
 
-yak_compile_options(
+if (NOT YAK_HOSTED_MODE)
+	yak_compile_options(
 	-ffreestanding
-	-ggdb3
 	-nostdinc
+	-fno-pie
+	-fno-pic
+	)
+endif()
+
+yak_compile_options(
+	-ggdb3
 	-fno-omit-frame-pointer
 	-fno-strict-aliasing
 	-fno-semantic-interposition
@@ -109,9 +130,6 @@ yak_compile_options(
 	-pipe
 	-fdata-sections
 	-ffunction-sections
-	-fno-pie
-	-fno-pic
-	-fno-plt
 	-Wall
 	-Wextra
 	-Wshadow
@@ -127,17 +145,27 @@ yak_compile_options(
 	$<$<CXX_COMPILER_ID:Clang>:-fstrict-vtable-pointers>
 )
 
+if (NOT YAK_HOSTED_MODE)
 yak_link_options(
 	-nostdlib
+)
+endif()
+
+yak_link_options(
 	--eh-frame-hdr
 	-gc-sections
 )
 
 yak_link(
 	PkgConfig::FRIGG
+)
+
+if (NOT YAK_HOSTED_MODE)
+yak_link(
 	PkgConfig::FREESTND_C_HDRS
 	PkgConfig::FREESTND_CXX_HDRS
 )
+endif()
 
 yak_add_sources(
 	${VENDOR_DIR}/flanterm/src/flanterm.c

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <assert.h>
+#include <yak/assert.h>
 #include <atomic>
 #include <yak/arch-intr.h>
 #include <yak/ipl.h>

@@ -1,9 +1,7 @@
-add_subdirectory(${YAK_ARCH})
-
-if (YAK_INCLUDE_ACPI)
-	include(${VENDOR_DIR}/uacpi/uacpi.cmake)
-	yak_add_sources(${UACPI_SOURCES})
-	yak_add_includes(${UACPI_INCLUDES})
+if(YAK_HOSTED_MODE)
+	add_subdirectory(hosted/${YAK_HOSTED_SYSTEM})
+else()
+	add_subdirectory(${YAK_ARCH})
 endif()
 
 if (YAK_INCLUDE_LIMINE) 

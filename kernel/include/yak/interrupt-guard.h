@@ -1,6 +1,6 @@
 #pragma once
 
-#include <assert.h>
+#include <yak/assert.h>
 #include <yak/arch-intr.h>
 
 namespace yak {

@@ -36,6 +36,12 @@ if(OVERLAY_CONFIG)
     string(REPLACE " " ";" EXTRA_CONF_FILE_AS_LIST "${EXTRA_CONF_FILE_EXPANDED}")
 endif()
 
+if (YAK_HOSTED_MODE)
+    set(ARCH_DIR ${PROJECT_ROOT}/kernel/arch/hosted/${YAK_HOSTED_SYSTEM})
+else()
+    set(ARCH_DIR ${PROJECT_ROOT}/kernel/arch/${YAK_ARCH})
+endif()
+
 set(COMMON_KCONFIG_ENV_SETTINGS
     PYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
     srctree=${PROJECT_ROOT}

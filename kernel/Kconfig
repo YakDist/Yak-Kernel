@@ -1,5 +1,6 @@
-orsource "arch/$ARCH/Kconfig"
+rsource "$ARCH_DIR/Kconfig"
 rsource "vm/Kconfig"
+rsource "io/Kconfig"
 
 menu "Build options"
 	config LTO

@@ -1,13 +1,13 @@
 #define pr_fmt(fmt) "pmm: " fmt
 
 #include <algorithm>
-#include <assert.h>
 #include <cstddef>
 #include <frg/mutex.hpp>
 #include <optional>
 #include <string.h>
 #include <yak/arch-mm.h>
 #include <yak/arch-page.h>
+#include <yak/assert.h>
 #include <yak/cpudata.h>
 #include <yak/ipl-guard.h>
 #include <yak/log.h>

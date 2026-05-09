@@ -1,6 +1,6 @@
 #define pr_fmt(fmt) "apic: " fmt
 
-#include <assert.h>
+#include <yak/assert.h>
 #include <cstdint>
 #include <x86_64/asm.h>
 #include <x86_64/cpu_features.h>

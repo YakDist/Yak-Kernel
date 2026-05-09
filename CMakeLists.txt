@@ -1,13 +1,23 @@
 cmake_minimum_required(VERSION 3.21)
 
 set(YAK_ARCH "" CACHE STRING "Kernel architecture")
+set(YAK_HOSTED_MODE false CACHE BOOL "Compile kernel for hosted system architecture")
+set(YAK_HOSTED_SYSTEM "" CACHE STRING "Hosted system")
 set(BUILD_CONFIG "default" CACHE STRING "Build defconfig")
 
 set(YAK_ARCHS_SUPPORTED x86_64 riscv64)
 
+set(YAK_HOSTED_SYSTEMS_SUPPORTED linux)
+
 if (NOT YAK_ARCH IN_LIST YAK_ARCHS_SUPPORTED)
 	message(FATAL_ERROR
 		"Unsupported architecture: ${YAK_ARCH}"
+	)
+endif()
+
+if (YAK_HOSTED_MODE AND NOT YAK_HOSTED_SYSTEM IN_LIST YAK_HOSTED_SYSTEMS_SUPPORTED)
+	message(FATAL_ERROR
+		"Unsupported host system: ${YAK_HOSTED_SYSTEM}"
 	)
 endif()
 

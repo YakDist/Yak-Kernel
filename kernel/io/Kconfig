@@ -1,0 +1,4 @@
+config ACPI_ENABLED
+	bool "Enable support for ACPI"
+	depends on ARCH_HAS_ACPI
+	default y

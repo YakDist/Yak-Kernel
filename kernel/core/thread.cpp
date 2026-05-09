@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <assert.h>
+#include <yak/assert.h>
 #include <span>
 #include <string.h>
 #include <yak/cpudata.h>

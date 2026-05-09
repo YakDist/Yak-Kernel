@@ -1,5 +1,4 @@
 set(YAK_INCLUDE_LIMINE ON PARENT_SCOPE)
-set(YAK_INCLUDE_ACPI ON PARENT_SCOPE)
 
 yak_add_sources(
 	start.S

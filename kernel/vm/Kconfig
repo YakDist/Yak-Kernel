@@ -10,3 +10,8 @@ config FREELIST_ORDERS
 		The maximum physically-contiguous allocation size will be PAGE_SIZE * (1 << (FREELIST_ORDERS - 1))
 
 endmenu
+
+config USE_GENERIC_PAGEMAP
+	bool
+	depends on ARCH_SUPPORTS_GENERIC_PAGEMAP
+	default n

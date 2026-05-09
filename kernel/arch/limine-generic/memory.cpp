@@ -1,6 +1,6 @@
 #define pr_fmt(fmt) "limine: " fmt
 
-#include <assert.h>
+#include <yak/assert.h>
 #include <cstddef>
 #include <limine-generic/init.h>
 #include <limine-generic/request.h>

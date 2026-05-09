@@ -21,7 +21,7 @@
 namespace yak {
 
 constinit GlobalInitEngine init_engine;
-CPUDATA_DECL CpuData bsp_cpu_data;
+CPUDATA_DECL constinit CpuData bsp_cpu_data = CpuData();
 
 /* Declared in the linker script */
 extern "C" void (*__init_array_start[])();
@@ -40,8 +40,8 @@ void run_init_array() {
 
 #if CONFIG_BOOT_BANNER
 const char boot_banner[] = {
-#embed "banner.txt" if_empty()
-};
+#embed "banner.txt"
+    , '\0'};
 #endif
 
 namespace arch {
@@ -64,7 +64,9 @@ extern "C" void kernel_entry(void *bsp_idle_stack_top) {
   pr_info("Booting Yak/" ARCH_STR " v" KERNEL_VERSION_STR
           " (commit: " KERNEL_GIT_HASH ")\n");
 
+#ifndef YAK_HOSTED_MODE
   run_init_array();
+#endif
 
   CpuData::initialize(&bsp_cpu_data);
   bsp_cpu_data.bsp = true;

@@ -1,7 +1,12 @@
+#include <yak/config.h>
+#
 .extern kernel_entry
 .extern __percpu_start
 .extern __kernel_entry_stack_top
-#include <yak/config.h>
+
+#if CONFIG_STACK_CANARIES
+.extern __stack_chk_guard
+#endif
 
 .text
 
@@ -35,13 +40,5 @@ exe_entry:
 1:
     wfi
     j 1b
-
-#if CONFIG_STACK_CANARIES
-.data
-    .globl __stack_chk_guard
-    .type __stack_chk_guard, @object
-__stack_chk_guard:
-    .quad 0
-#endif
 
 .section .note.GNU-stack,"",%progbits

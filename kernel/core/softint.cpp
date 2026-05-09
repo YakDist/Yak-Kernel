@@ -1,5 +1,5 @@
 #include <array>
-#include <assert.h>
+#include <yak/assert.h>
 #include <yak/arch-intr.h>
 #include <yak/interrupt-guard.h>
 #include <yak/panic.h>

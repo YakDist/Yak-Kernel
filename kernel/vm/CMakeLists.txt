@@ -1,7 +1,10 @@
 yak_add_sources(
 	pmm.cpp
 	memblock.cpp
-	generic_pagemap.cpp
 	map.cpp
 	stack.cpp
 )
+
+if (CONFIG_USE_GENERIC_PAGEMAP)
+	yak_add_sources(generic_pagemap.cpp)
+endif()

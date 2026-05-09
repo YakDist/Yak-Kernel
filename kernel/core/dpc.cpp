@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <yak/assert.h>
 #include <frg/mutex.hpp>
 #include <yak/cpudata.h>
 #include <yak/dpc.h>
