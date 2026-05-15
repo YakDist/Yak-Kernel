@@ -1,9 +1,21 @@
-#define pr_fmt(fmt) "tinyubsan: " fmt
-
+#include <stddef.h>
 #include <stdint.h>
 #include <yak/log.h>
+#include <yak/panic.h>
 
 using namespace yak;
+
+#define TINYUBSAN_TRAP  __builtin_trap
+#define TINYUBSAN_PRINT pr_error
+
+/* Optional: define this to trap */
+#ifndef TINYUBSAN_TRAP
+#define TINYUBSAN_TRAP() ((void) 0)
+#endif
+
+#ifndef TINYUBSAN_PRINT
+#error "Please define TINYUBSAN_PRINT"
+#endif
 
 struct tu_source_location {
   const char *file;
@@ -14,7 +26,7 @@ struct tu_source_location {
 struct tu_type_descriptor {
   uint16_t kind;
   uint16_t info;
-  char name[1];
+  char name[];
 };
 
 struct tu_overflow_data {
@@ -46,11 +58,6 @@ struct tu_type_mismatch_v1_data {
   unsigned char type_check_kind;
 };
 
-struct tu_function_type_mismatch_data {
-  struct tu_source_location location;
-  struct tu_type_descriptor *type;
-};
-
 struct tu_negative_vla_data {
   struct tu_source_location location;
   struct tu_type_descriptor *type;
@@ -73,100 +80,174 @@ struct tu_invalid_builtin_data {
   unsigned char kind;
 };
 
-struct tu_missing_return {
+struct tu_float_cast_overflow_data {
   struct tu_source_location location;
+  struct tu_type_descriptor *from_type;
+  struct tu_type_descriptor *to_type;
 };
 
-static void tu_print_location(const char *message,
-                              struct tu_source_location loc) {
-  pr_error("%s at file %s, line %d, column %d\n", message, loc.file, loc.line,
-           loc.column);
-}
+struct tu_pointer_overflow_data {
+  struct tu_source_location location;
+  struct tu_type_descriptor *type;
+};
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+static void print_location(const char *message,
+                           const struct tu_source_location loc) {
+  const char *file = loc.file ? loc.file : "<unknown>";
+  TINYUBSAN_PRINT("tinyubsan: %s at %s:%u:%u\n", message, file, loc.line,
+                  loc.column);
+}
+
+static void print_type(const char *label,
+                       const struct tu_type_descriptor *type) {
+  if (!type || !type->name[0]) {
+    return;
+  }
+  TINYUBSAN_PRINT("tinyubsan:   %s type: %s\n", label, type->name);
+}
+
+static void report(const char *message, const struct tu_source_location loc,
+                   const struct tu_type_descriptor *type) {
+  print_location(message, loc);
+  print_type("value", type);
+  TINYUBSAN_TRAP();
+}
+
 void __ubsan_handle_add_overflow(struct tu_overflow_data *data) {
-  tu_print_location("addition overflow", data->location);
+  report("addition overflow", data->location, data->type);
 }
-
 void __ubsan_handle_sub_overflow(struct tu_overflow_data *data) {
-  tu_print_location("subtraction overflow", data->location);
+  report("subtraction overflow", data->location, data->type);
 }
-
 void __ubsan_handle_mul_overflow(struct tu_overflow_data *data) {
-  tu_print_location("multiplication overflow", data->location);
+  report("multiplication overflow", data->location, data->type);
 }
-
 void __ubsan_handle_divrem_overflow(struct tu_overflow_data *data) {
-  tu_print_location("division overflow", data->location);
+  report("division overflow", data->location, data->type);
 }
-
 void __ubsan_handle_negate_overflow(struct tu_overflow_data *data) {
-  tu_print_location("negation overflow", data->location);
+  report("negation overflow", data->location, data->type);
 }
-
 void __ubsan_handle_pointer_overflow(struct tu_overflow_data *data) {
-  tu_print_location("pointer overflow", data->location);
+  report("pointer overflow", data->location, data->type);
 }
-
 void __ubsan_handle_shift_out_of_bounds(
     struct tu_shift_out_of_bounds_data *data) {
-  tu_print_location("shift out of bounds", data->location);
+  print_location("shift out of bounds", data->location);
+  print_type("left", data->left_type);
+  print_type("right", data->right_type);
+  TINYUBSAN_TRAP();
 }
-
 void __ubsan_handle_load_invalid_value(struct tu_invalid_value_data *data) {
-  tu_print_location("invalid load value", data->location);
+  report("invalid load value", data->location, data->type);
 }
-
 void __ubsan_handle_out_of_bounds(struct tu_array_out_of_bounds_data *data) {
-  tu_print_location("array out of bounds", data->location);
+  print_location("array out of bounds", data->location);
+  print_type("array", data->array_type);
+  print_type("index", data->index_type);
+  TINYUBSAN_TRAP();
 }
-
 void __ubsan_handle_type_mismatch_v1(struct tu_type_mismatch_v1_data *data,
                                      uintptr_t ptr) {
   if (!ptr) {
-    tu_print_location("use of NULL pointer", data->location);
-  }
-
-  else if (ptr & ((1 << data->log_alignment) - 1)) {
-    tu_print_location("use of misaligned pointer", data->location);
+    report("use of NULL pointer", data->location, data->type);
+  } else if (ptr & (((uintptr_t) 1 << data->log_alignment) - 1)) {
+    report("use of misaligned pointer", data->location, data->type);
   } else {
-    tu_print_location("no space for object", data->location);
+    report("insufficient space for object", data->location, data->type);
   }
+}
+void __ubsan_handle_vla_bound_not_positive(struct tu_negative_vla_data *data) {
+  report("VLA bound not positive", data->location, data->type);
+}
+void __ubsan_handle_nonnull_return(struct tu_nonnull_return_data *data) {
+  report("non-null return is null", data->location, NULL);
+}
+void __ubsan_handle_nonnull_arg(struct tu_nonnull_arg_data *data) {
+  report("non-null argument is null", data->location, NULL);
+}
+void __ubsan_handle_builtin_unreachable(struct tu_unreachable_data *data) {
+  report("unreachable code reached", data->location, NULL);
+}
+void __ubsan_handle_invalid_builtin(struct tu_invalid_builtin_data *data) {
+  report("invalid builtin", data->location, NULL);
 }
 
 void __ubsan_handle_function_type_mismatch(
-    struct tu_function_type_mismatch_data *data, uintptr_t ptr) {
-  if (!ptr) {
-    tu_print_location("use of NULL pointer", data->location);
-  }
-  tu_print_location("function type mismatch", data->location);
+    struct tu_type_mismatch_v1_data *data) {
+  report("type mismatch", data->location, NULL);
 }
 
-void __ubsan_handle_vla_bound_not_positive(struct tu_negative_vla_data *data) {
-  tu_print_location("variable-length argument is negative", data->location);
+void __ubsan_handle_add_overflow_abort(struct tu_overflow_data *data) {
+  __ubsan_handle_add_overflow(data);
+  TINYUBSAN_TRAP();
 }
-
-void __ubsan_handle_nonnull_return(struct tu_nonnull_return_data *data) {
-  tu_print_location("non-null return is null", data->location);
+void __ubsan_handle_sub_overflow_abort(struct tu_overflow_data *data) {
+  __ubsan_handle_sub_overflow(data);
+  TINYUBSAN_TRAP();
 }
-
-void __ubsan_handle_nonnull_arg(struct tu_nonnull_arg_data *data) {
-  tu_print_location("non-null argument is null", data->location);
+void __ubsan_handle_mul_overflow_abort(struct tu_overflow_data *data) {
+  __ubsan_handle_mul_overflow(data);
+  TINYUBSAN_TRAP();
 }
-
-void __ubsan_handle_builtin_unreachable(struct tu_unreachable_data *data) {
-  tu_print_location("unreachable code reached", data->location);
+void __ubsan_handle_divrem_overflow_abort(struct tu_overflow_data *data) {
+  __ubsan_handle_divrem_overflow(data);
+  TINYUBSAN_TRAP();
 }
-
-void __ubsan_handle_invalid_builtin(struct tu_invalid_builtin_data *data) {
-  tu_print_location("invalid builtin", data->location);
+void __ubsan_handle_negate_overflow_abort(struct tu_overflow_data *data) {
+  __ubsan_handle_negate_overflow(data);
+  TINYUBSAN_TRAP();
 }
-
-void __ubsan_handle_missing_return(struct tu_missing_return *data) {
-  tu_print_location("missing return", data->location);
+void __ubsan_handle_pointer_overflow_abort(struct tu_overflow_data *data) {
+  __ubsan_handle_pointer_overflow(data);
+  TINYUBSAN_TRAP();
+}
+void __ubsan_handle_shift_out_of_bounds_abort(
+    struct tu_shift_out_of_bounds_data *data) {
+  __ubsan_handle_shift_out_of_bounds(data);
+  TINYUBSAN_TRAP();
+}
+void __ubsan_handle_load_invalid_value_abort(
+    struct tu_invalid_value_data *data) {
+  __ubsan_handle_load_invalid_value(data);
+  TINYUBSAN_TRAP();
+}
+void __ubsan_handle_out_of_bounds_abort(
+    struct tu_array_out_of_bounds_data *data) {
+  __ubsan_handle_out_of_bounds(data);
+  TINYUBSAN_TRAP();
+}
+void __ubsan_handle_type_mismatch_v1_abort(
+    struct tu_type_mismatch_v1_data *data, uintptr_t ptr) {
+  __ubsan_handle_type_mismatch_v1(data, ptr);
+  TINYUBSAN_TRAP();
+}
+void __ubsan_handle_vla_bound_not_positive_abort(
+    struct tu_negative_vla_data *data) {
+  __ubsan_handle_vla_bound_not_positive(data);
+  TINYUBSAN_TRAP();
+}
+void __ubsan_handle_nonnull_return_abort(struct tu_nonnull_return_data *data) {
+  __ubsan_handle_nonnull_return(data);
+  TINYUBSAN_TRAP();
+}
+void __ubsan_handle_nonnull_arg_abort(struct tu_nonnull_arg_data *data) {
+  __ubsan_handle_nonnull_arg(data);
+  TINYUBSAN_TRAP();
+}
+void __ubsan_handle_builtin_unreachable_abort(
+    struct tu_unreachable_data *data) {
+  __ubsan_handle_builtin_unreachable(data);
+  TINYUBSAN_TRAP();
+}
+void __ubsan_handle_invalid_builtin_abort(
+    struct tu_invalid_builtin_data *data) {
+  __ubsan_handle_invalid_builtin(data);
+  TINYUBSAN_TRAP();
 }
 
 #ifdef __cplusplus
