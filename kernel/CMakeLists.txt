@@ -92,6 +92,8 @@ if (CONFIG_UBSAN)
 endif()
 
 if (CONFIG_BUILD_TYPE_DEBUG)
+	yak_compile_options(-O0)
+elseif (CONFIG_BUILD_TYPE_DEBUG_OPTIMIZED)
 	check_cxx_compiler_flag("-fextend-variable-liveness" HAS_EXTEND_VARIABLE_LIVENESS)
 	if (HAS_EXTEND_VARIABLE_LIVENESS)
 		yak_compile_options(-Og -fextend-variable-liveness)

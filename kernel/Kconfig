@@ -35,12 +35,18 @@ menu "Build options"
 	
 	config BUILD_TYPE_DEBUG
 		bool "Debug"
+
+	config BUILD_TYPE_DEBUG_OPTIMIZED
+		bool "DebugOptimized"
 	
 	config BUILD_TYPE_RELEASE
 		bool "Release"
 	
 	config BUILD_TYPE_MINSIZEREL
 		bool "MinSizeRel"
+
+	config BUILD_TYPE_FASTFLAGSREL
+		bool "FastFlagsRel"
 	
 	endchoice
 endmenu
@@ -53,4 +59,11 @@ menu "General Options"
 	config LOG_TIMESTAMPS
 		bool "Timestamp logs"
 		default y
+
+	config MAX_NR_CPUS
+		int "Number of supported CPUs"
+		range 1 4096
+		default 256
+		help
+			Maximum number of supported CPUs. Has to be power of two.
 endmenu
